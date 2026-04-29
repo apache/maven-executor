@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.maven.cling.executor.internal;
+package org.apache.maven.cling.executor.support;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -39,7 +39,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @see <a href="https://github.com/maveniverse/toolbox">Maveniverse Toolbox</a>
  */
-public class ToolboxTool implements ExecutorTool {
+public class ToolboxExecutorTool implements ExecutorTool {
     private static final String TOOLBOX_PREFIX = "eu.maveniverse.maven.plugins:toolbox:";
 
     private final ExecutorHelper helper;
@@ -47,18 +47,18 @@ public class ToolboxTool implements ExecutorTool {
     private final ExecutorHelper.Mode forceMode;
 
     /**
-     * @deprecated Better specify required version yourself. This one is "cemented" to 0.13.7
+     * @deprecated Better specify required version yourself. This one is "cemented" to 0.15.8
      */
     @Deprecated
-    public ToolboxTool(ExecutorHelper helper) {
-        this(helper, "0.13.7");
+    public ToolboxExecutorTool(ExecutorHelper helper) {
+        this(helper, "0.15.8");
     }
 
-    public ToolboxTool(ExecutorHelper helper, String toolboxVersion) {
+    public ToolboxExecutorTool(ExecutorHelper helper, String toolboxVersion) {
         this(helper, toolboxVersion, null);
     }
 
-    public ToolboxTool(ExecutorHelper helper, String toolboxVersion, ExecutorHelper.Mode forceMode) {
+    public ToolboxExecutorTool(ExecutorHelper helper, String toolboxVersion, ExecutorHelper.Mode forceMode) {
         this.helper = requireNonNull(helper);
         this.toolboxVersion = requireNonNull(toolboxVersion);
         this.forceMode = forceMode; // nullable

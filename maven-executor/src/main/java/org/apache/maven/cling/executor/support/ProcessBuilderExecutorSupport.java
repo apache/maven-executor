@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.maven.cling.executor.forked;
+package org.apache.maven.cling.executor.support;
 
 import java.io.IOException;
 import java.io.InputStream;

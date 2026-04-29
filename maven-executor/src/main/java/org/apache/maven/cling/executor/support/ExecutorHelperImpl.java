@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.maven.cling.executor.internal;
+package org.apache.maven.cling.executor.support;
 
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,13 +31,13 @@ import static java.util.Objects.requireNonNull;
 /**
  * Simple router to executors, and delegate to executor tool.
  */
-public class HelperImpl implements ExecutorHelper {
+public class ExecutorHelperImpl implements ExecutorHelper {
     private final Mode defaultMode;
     private final HashMap<Mode, Executor> executors;
 
     private final ConcurrentHashMap<String, String> cache;
 
-    public HelperImpl(Mode defaultMode, Executor embedded, Executor forked) {
+    public ExecutorHelperImpl(Mode defaultMode, Executor embedded, Executor forked) {
         this.defaultMode = requireNonNull(defaultMode);
         this.executors = new HashMap<>();
 

@@ -21,4 +21,5 @@ module org.apache.maven.cling.executor {
     exports org.apache.maven.cling.executor;
     exports org.apache.maven.cling.executor.forked;
     exports org.apache.maven.cling.executor.embedded;
+    exports org.apache.maven.cling.executor.support;
 }

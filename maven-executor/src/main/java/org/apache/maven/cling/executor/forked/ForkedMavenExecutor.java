@@ -31,6 +31,7 @@ import java.util.List;
 import org.apache.maven.cling.executor.Executor;
 import org.apache.maven.cling.executor.ExecutorException;
 import org.apache.maven.cling.executor.ExecutorRequest;
+import org.apache.maven.cling.executor.support.ProcessBuilderExecutorSupport;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.maven.cling.executor.ExecutorRequest.getCanonicalPath;

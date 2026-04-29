@@ -28,7 +28,7 @@ import java.util.Map;
 import org.apache.maven.cling.executor.Executor;
 import org.apache.maven.cling.executor.ExecutorException;
 import org.apache.maven.cling.executor.ExecutorRequest;
-import org.apache.maven.cling.executor.forked.ProcessBuilderExecutorSupport;
+import org.apache.maven.cling.executor.support.ProcessBuilderExecutorSupport;
 
 import static java.util.Objects.requireNonNull;
 

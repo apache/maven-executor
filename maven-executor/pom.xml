@@ -33,7 +33,7 @@
   <name>Maven Executor</name>
 
   <properties>
-    <version.toolbox>0.14.1</version.toolbox>
+    <version.toolbox>0.15.8</version.toolbox>
   </properties>
 
   <dependencies>

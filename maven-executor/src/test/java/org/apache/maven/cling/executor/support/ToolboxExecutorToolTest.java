@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.maven.cling.executor.impl;
+package org.apache.maven.cling.executor.support;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -29,8 +29,6 @@ import org.apache.maven.cling.executor.ExecutorHelper;
 import org.apache.maven.cling.executor.ExecutorRequest;
 import org.apache.maven.cling.executor.embedded.EmbeddedMavenExecutor;
 import org.apache.maven.cling.executor.forked.ForkedMavenExecutor;
-import org.apache.maven.cling.executor.internal.HelperImpl;
-import org.apache.maven.cling.executor.internal.ToolboxTool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
@@ -43,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Timeout(60)
-public class ToolboxToolTest {
+public class ToolboxExecutorToolTest {
     @TempDir(cleanup = CleanupMode.NEVER)
     private static Path tempDir;
 
@@ -81,10 +79,10 @@ public class ToolboxToolTest {
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
     void dump3(ExecutorHelper.Mode mode) throws Exception {
-        ExecutorHelper helper =
-                new HelperImpl(mode, new EmbeddedMavenExecutor(mvn3Home()), new ForkedMavenExecutor(mvn3Home()));
+        ExecutorHelper helper = new ExecutorHelperImpl(
+                mode, new EmbeddedMavenExecutor(mvn3Home()), new ForkedMavenExecutor(mvn3Home()));
         Map<String, String> dump =
-                new ToolboxTool(helper, Environment.TOOLBOX_VERSION).dump(getExecutorRequest(helper));
+                new ToolboxExecutorTool(helper, Environment.TOOLBOX_VERSION).dump(getExecutorRequest(helper));
         System.out.println(mode.name() + ": " + dump.toString());
         assertEquals(System.getProperty("maven3version"), dump.get("maven.version"));
     }
@@ -92,10 +90,10 @@ public class ToolboxToolTest {
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
     void dump4(ExecutorHelper.Mode mode) throws Exception {
-        ExecutorHelper helper =
-                new HelperImpl(mode, new EmbeddedMavenExecutor(mvn4Home()), new ForkedMavenExecutor(mvn4Home()));
+        ExecutorHelper helper = new ExecutorHelperImpl(
+                mode, new EmbeddedMavenExecutor(mvn4Home()), new ForkedMavenExecutor(mvn4Home()));
         Map<String, String> dump =
-                new ToolboxTool(helper, Environment.TOOLBOX_VERSION).dump(getExecutorRequest(helper));
+                new ToolboxExecutorTool(helper, Environment.TOOLBOX_VERSION).dump(getExecutorRequest(helper));
         System.out.println(mode.name() + ": " + dump.toString());
         assertEquals(System.getProperty("maven4version"), dump.get("maven.version"));
     }
@@ -103,8 +101,8 @@ public class ToolboxToolTest {
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
     void version3(ExecutorHelper.Mode mode) {
-        ExecutorHelper helper =
-                new HelperImpl(mode, new EmbeddedMavenExecutor(mvn3Home()), new ForkedMavenExecutor(mvn3Home()));
+        ExecutorHelper helper = new ExecutorHelperImpl(
+                mode, new EmbeddedMavenExecutor(mvn3Home()), new ForkedMavenExecutor(mvn3Home()));
         System.out.println(mode.name() + ": " + helper.mavenVersion());
         assertEquals(System.getProperty("maven3version"), helper.mavenVersion());
     }
@@ -112,8 +110,8 @@ public class ToolboxToolTest {
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
     void version4(ExecutorHelper.Mode mode) {
-        ExecutorHelper helper =
-                new HelperImpl(mode, new EmbeddedMavenExecutor(mvn4Home()), new ForkedMavenExecutor(mvn4Home()));
+        ExecutorHelper helper = new ExecutorHelperImpl(
+                mode, new EmbeddedMavenExecutor(mvn4Home()), new ForkedMavenExecutor(mvn4Home()));
         System.out.println(mode.name() + ": " + helper.mavenVersion());
         assertEquals(System.getProperty("maven4version"), helper.mavenVersion());
     }
@@ -121,10 +119,10 @@ public class ToolboxToolTest {
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
     void localRepository3(ExecutorHelper.Mode mode) {
-        ExecutorHelper helper =
-                new HelperImpl(mode, new EmbeddedMavenExecutor(mvn3Home()), new ForkedMavenExecutor(mvn3Home()));
-        String localRepository =
-                new ToolboxTool(helper, Environment.TOOLBOX_VERSION).localRepository(getExecutorRequest(helper));
+        ExecutorHelper helper = new ExecutorHelperImpl(
+                mode, new EmbeddedMavenExecutor(mvn3Home()), new ForkedMavenExecutor(mvn3Home()));
+        String localRepository = new ToolboxExecutorTool(helper, Environment.TOOLBOX_VERSION)
+                .localRepository(getExecutorRequest(helper));
         System.out.println(mode.name() + ": " + localRepository);
         Path local = Paths.get(localRepository);
         assertTrue(Files.isDirectory(local));
@@ -133,10 +131,10 @@ public class ToolboxToolTest {
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
     void localRepository4(ExecutorHelper.Mode mode) {
-        ExecutorHelper helper =
-                new HelperImpl(mode, new EmbeddedMavenExecutor(mvn4Home()), new ForkedMavenExecutor(mvn4Home()));
-        String localRepository =
-                new ToolboxTool(helper, Environment.TOOLBOX_VERSION).localRepository(getExecutorRequest(helper));
+        ExecutorHelper helper = new ExecutorHelperImpl(
+                mode, new EmbeddedMavenExecutor(mvn4Home()), new ForkedMavenExecutor(mvn4Home()));
+        String localRepository = new ToolboxExecutorTool(helper, Environment.TOOLBOX_VERSION)
+                .localRepository(getExecutorRequest(helper));
         System.out.println(mode.name() + ": " + localRepository);
         Path local = Paths.get(localRepository);
         assertTrue(Files.isDirectory(local));
@@ -145,9 +143,9 @@ public class ToolboxToolTest {
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
     void artifactPath3(ExecutorHelper.Mode mode) {
-        ExecutorHelper helper =
-                new HelperImpl(mode, new EmbeddedMavenExecutor(mvn3Home()), new ForkedMavenExecutor(mvn3Home()));
-        String path = new ToolboxTool(helper, Environment.TOOLBOX_VERSION)
+        ExecutorHelper helper = new ExecutorHelperImpl(
+                mode, new EmbeddedMavenExecutor(mvn3Home()), new ForkedMavenExecutor(mvn3Home()));
+        String path = new ToolboxExecutorTool(helper, Environment.TOOLBOX_VERSION)
                 .artifactPath(getExecutorRequest(helper), "aopalliance:aopalliance:1.0", "central");
         System.out.println(mode.name() + ": " + path);
         // split repository: assert "ends with" as split may introduce prefixes
@@ -160,9 +158,9 @@ public class ToolboxToolTest {
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
     void artifactPath4(ExecutorHelper.Mode mode) {
-        ExecutorHelper helper =
-                new HelperImpl(mode, new EmbeddedMavenExecutor(mvn4Home()), new ForkedMavenExecutor(mvn4Home()));
-        String path = new ToolboxTool(helper, Environment.TOOLBOX_VERSION)
+        ExecutorHelper helper = new ExecutorHelperImpl(
+                mode, new EmbeddedMavenExecutor(mvn4Home()), new ForkedMavenExecutor(mvn4Home()));
+        String path = new ToolboxExecutorTool(helper, Environment.TOOLBOX_VERSION)
                 .artifactPath(getExecutorRequest(helper), "aopalliance:aopalliance:1.0", "central");
         System.out.println(mode.name() + ": " + path);
         // split repository: assert "ends with" as split may introduce prefixes
@@ -175,9 +173,9 @@ public class ToolboxToolTest {
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
     void metadataPath3(ExecutorHelper.Mode mode) {
-        ExecutorHelper helper =
-                new HelperImpl(mode, new EmbeddedMavenExecutor(mvn3Home()), new ForkedMavenExecutor(mvn3Home()));
-        String path = new ToolboxTool(helper, Environment.TOOLBOX_VERSION)
+        ExecutorHelper helper = new ExecutorHelperImpl(
+                mode, new EmbeddedMavenExecutor(mvn3Home()), new ForkedMavenExecutor(mvn3Home()));
+        String path = new ToolboxExecutorTool(helper, Environment.TOOLBOX_VERSION)
                 .metadataPath(getExecutorRequest(helper), "aopalliance", "someremote");
         System.out.println(mode.name() + ": " + path);
         // split repository: assert "ends with" as split may introduce prefixes
@@ -187,9 +185,9 @@ public class ToolboxToolTest {
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
     void metadataPath4(ExecutorHelper.Mode mode) {
-        ExecutorHelper helper =
-                new HelperImpl(mode, new EmbeddedMavenExecutor(mvn4Home()), new ForkedMavenExecutor(mvn4Home()));
-        String path = new ToolboxTool(helper, Environment.TOOLBOX_VERSION)
+        ExecutorHelper helper = new ExecutorHelperImpl(
+                mode, new EmbeddedMavenExecutor(mvn4Home()), new ForkedMavenExecutor(mvn4Home()));
+        String path = new ToolboxExecutorTool(helper, Environment.TOOLBOX_VERSION)
                 .metadataPath(getExecutorRequest(helper), "aopalliance", "someremote");
         System.out.println(mode.name() + ": " + path);
         // split repository: assert "ends with" as split may introduce prefixes
