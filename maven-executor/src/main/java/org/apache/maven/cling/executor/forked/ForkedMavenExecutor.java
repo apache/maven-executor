@@ -44,7 +44,7 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
     protected final boolean useMavenArgsEnv;
 
     public ForkedMavenExecutor(Path installationDirectory) {
-        this(installationDirectory, true);
+        this(installationDirectory, false);
     }
 
     public ForkedMavenExecutor(Path installationDirectory, boolean useMavenArgsEnv) {
