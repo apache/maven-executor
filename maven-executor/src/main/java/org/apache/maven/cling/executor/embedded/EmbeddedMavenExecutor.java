@@ -71,7 +71,7 @@ public class EmbeddedMavenExecutor implements Executor {
     /**
      * Context holds things loaded up from given Maven Installation Directory.
      */
-    protected static final class Context {
+    protected static class Context {
         private final URLClassLoader bootClassLoader;
         private final String version;
         private final Object classWorld;
@@ -80,7 +80,7 @@ public class EmbeddedMavenExecutor implements Executor {
         private final Map<String, Function<ExecutorRequest, Integer>> commands; // the commands
         private final Collection<Object> keepAlive; // refs things to make sure no GC takes it away
 
-        private Context(
+        protected Context(
                 URLClassLoader bootClassLoader,
                 String version,
                 Object classWorld,

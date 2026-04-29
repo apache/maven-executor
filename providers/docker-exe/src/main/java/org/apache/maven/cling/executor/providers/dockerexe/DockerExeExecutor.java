@@ -36,7 +36,7 @@ import static java.util.Objects.requireNonNull;
  * Executor that spawns a process with {@code docker} CLI to run <a href="https://hub.docker.com/_/maven">Maven Docker image</a>.
  */
 public class DockerExeExecutor extends ProcessBuilderExecutorSupport implements Executor {
-    private final String mavenVersion;
+    protected final String mavenVersion;
 
     public static DockerExeExecutor withMavenVersion(String mavenVersion) {
         return new DockerExeExecutor(mavenVersion);

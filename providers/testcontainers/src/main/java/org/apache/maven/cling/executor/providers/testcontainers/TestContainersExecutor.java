@@ -45,7 +45,7 @@ import static java.util.Objects.requireNonNull;
  * Executor that uses {@link org.testcontainers.Testcontainers} to run <a href="https://hub.docker.com/_/maven">Maven Docker image</a>.
  */
 public class TestContainersExecutor implements Executor {
-    private final String mavenVersion;
+    protected final String mavenVersion;
 
     public static TestContainersExecutor withMavenVersion(String mavenVersion) {
         return new TestContainersExecutor(mavenVersion);
