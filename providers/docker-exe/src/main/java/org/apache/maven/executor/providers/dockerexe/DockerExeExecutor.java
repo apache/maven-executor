@@ -49,7 +49,7 @@ public class DockerExeExecutor extends ProcessBuilderExecutorSupport implements 
      * @param mavenVersion required param, the Maven version, not {@code null}.
      */
     public static DockerExeExecutor withMavenImageVersion(String mavenVersion) {
-        return new DockerExeExecutor("maven", requireNonNull(mavenVersion));
+        return withImage("maven", requireNonNull(mavenVersion));
     }
 
     /**
@@ -59,11 +59,11 @@ public class DockerExeExecutor extends ProcessBuilderExecutorSupport implements 
      * @param imageTag optional param, the image tag, may be {@code null}.
      */
     public static DockerExeExecutor withImage(String imageName, String imageTag) {
-        return new DockerExeExecutor(imageName, imageTag);
+        return new DockerExeExecutor(requireNonNull(imageName), imageTag);
     }
 
-    private DockerExeExecutor(String imageName, String imageTag) {
-        this.imageName = requireNonNull(imageName);
+    protected DockerExeExecutor(String imageName, String imageTag) {
+        this.imageName = imageName;
         this.imageTag = imageTag;
         this.cache = new ConcurrentHashMap<>();
     }
@@ -129,7 +129,7 @@ public class DockerExeExecutor extends ProcessBuilderExecutorSupport implements 
         });
     }
 
-    private static int detectUid(Path userHome) throws IOException {
+    protected int detectUid(Path userHome) throws IOException {
         return (Integer) Files.getAttribute(userHome, "unix:uid");
     }
 

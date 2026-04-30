@@ -58,7 +58,7 @@ public class TestContainersExecutor implements Executor {
      * @param mavenVersion required param, the Maven version, not {@code null}.
      */
     public static TestContainersExecutor withMavenImageVersion(String mavenVersion) {
-        return new TestContainersExecutor("maven", requireNonNull(mavenVersion));
+        return withImage("maven", requireNonNull(mavenVersion));
     }
 
     /**
@@ -68,11 +68,11 @@ public class TestContainersExecutor implements Executor {
      * @param imageTag optional param, the image tag, may be {@code null}.
      */
     public static TestContainersExecutor withImage(String imageName, String imageTag) {
-        return new TestContainersExecutor(imageName, imageTag);
+        return new TestContainersExecutor(requireNonNull(imageName), imageTag);
     }
 
-    private TestContainersExecutor(String imageName, String imageTag) {
-        this.imageName = requireNonNull(imageName);
+    protected TestContainersExecutor(String imageName, String imageTag) {
+        this.imageName = imageName;
         this.imageTag = imageTag;
         this.cache = new ConcurrentHashMap<>();
     }
@@ -141,7 +141,7 @@ public class TestContainersExecutor implements Executor {
         });
     }
 
-    private static int detectUid(Path userHome) {
+    protected int detectUid(Path userHome) {
         try {
             return (Integer) Files.getAttribute(userHome, "unix:uid");
         } catch (IOException e) {
@@ -152,7 +152,7 @@ public class TestContainersExecutor implements Executor {
     @Override
     public void close() {}
 
-    private static class MemoizingOneShotStartupCheckStrategy extends OneShotStartupCheckStrategy {
+    protected static class MemoizingOneShotStartupCheckStrategy extends OneShotStartupCheckStrategy {
         private final AtomicReference<StartupStatus> lastStatus = new AtomicReference<>(null);
 
         public StartupStatus checkStartupState(DockerClient dockerClient, String containerId) {
