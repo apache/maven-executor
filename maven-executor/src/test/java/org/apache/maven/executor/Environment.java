@@ -16,9 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.maven.executor;
 
-module org.apache.maven.cling.executor.providers.dockerexe {
-    exports org.apache.maven.executor.providers.dockerexe;
+public final class Environment {
+    private Environment() {}
 
-    requires transitive org.apache.maven.cling.executor;
+    public static final String TOOLBOX_VERSION = System.getProperty("version.toolbox", "UNSET version.toolbox");
+
+    public static final String MAVEN3_HOME = System.getProperty("maven3home", "UNSET");
+
+    public static final String MAVEN4_HOME = System.getProperty("maven4home", "UNSET");
 }

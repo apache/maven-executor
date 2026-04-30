@@ -16,9 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.maven.executor.forked;
 
-module org.apache.maven.cling.executor.providers.dockerexe {
-    exports org.apache.maven.executor.providers.dockerexe;
+import java.nio.file.Path;
 
-    requires transitive org.apache.maven.cling.executor;
+import org.apache.maven.executor.Executor;
+import org.apache.maven.executor.MavenExecutorTestSupport;
+
+/**
+ * Forked executor UT
+ */
+public class ForkedMavenExecutorTest extends MavenExecutorTestSupport {
+
+    @Override
+    protected Executor doSelectExecutor(Path installationDirectory) {
+        return new ForkedMavenExecutor(installationDirectory);
+    }
 }
