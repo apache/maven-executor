@@ -24,7 +24,7 @@
   <parent>
     <groupId>org.apache.maven.executor</groupId>
     <artifactId>executor</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
   </parent>
   <groupId>org.apache.maven.executor.providers</groupId>
   <artifactId>providers</artifactId>
