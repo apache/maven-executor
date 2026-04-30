@@ -24,10 +24,16 @@ import java.nio.file.Path;
 import org.apache.maven.executor.ExecutorRequest;
 import org.apache.maven.executor.test.TestProjects;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Uses Docker {@code -u} option, not supported on Windows.
+ */
+@DisabledOnOs(OS.WINDOWS)
 public class DockerExeExecutorTest {
     private static final String MAVEN_VERSION = "3.9.15";
 

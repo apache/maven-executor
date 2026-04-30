@@ -33,6 +33,12 @@ implementations out of the box: "forked" and "embedded". There are more provider
 * `docker-exe` uses Docker CLI and runs [Apache Maven Docker Image](https://hub.docker.com/_/maven)
 * `testcontainers` uses Docker via TestContainers and runs [Apache Maven Docker Image](https://hub.docker.com/_/maven)
 
+Versions
+--------
+
+Maven Executor 1.x line will contain **only** the executor bits, needed to run Maven ITs.
+Maven Executor 2.x line will add extra features a top of executors.
+
 Contributing
 ------------
 
