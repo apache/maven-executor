@@ -17,8 +17,8 @@
  * under the License.
  */
 
-module org.apache.maven.cling.executor.providers.dockerexe {
+module org.apache.maven.executor.providers.dockerexe {
     exports org.apache.maven.executor.providers.dockerexe;
 
-    requires transitive org.apache.maven.cling.executor;
+    requires transitive org.apache.maven.executor;
 }
