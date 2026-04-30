@@ -65,18 +65,17 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
     }
 
     @Override
-    public String mavenVersion(ExecutorRequest executorRequest) throws ExecutorException {
-        requireNonNull(executorRequest);
+    public String mavenVersion() throws ExecutorException {
         if (closed.get()) {
             throw new ExecutorException("Executor is closed");
         }
-        validate(executorRequest);
         try {
             Path cwd = Files.createTempDirectory("forked-executor-maven-version");
             try {
                 ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-                int exitCode = execute(executorRequest.toBuilder()
+                int exitCode = execute(ExecutorRequest.mavenBuilder()
                         .cwd(cwd)
+                        .userHomeDirectory(ExecutorRequest.discoverUserHomeDirectory())
                         .arguments(List.of("--version", "--quiet"))
                         .stdOut(stdout)
                         .build());

@@ -46,7 +46,7 @@ public class DockerExeExecutorTest {
             int exitCode = executor.execute(request);
             assertEquals(0, exitCode);
             assertTrue(stdOut.toString().contains("[INFO] BUILD SUCCESS"));
-            assertEquals(MAVEN_VERSION, executor.mavenVersion(request));
+            assertEquals(MAVEN_VERSION, executor.mavenVersion());
         }
     }
 }

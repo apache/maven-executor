@@ -16,22 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.maven.executor;
+package org.apache.maven.executor.batch;
+
+import org.apache.maven.executor.ExecutorException;
+import org.apache.maven.executor.ExecutorRequest;
 
 /**
- * Defines the contract for a component responsible for executing a Maven tool
+ * Defines the contract for a component responsible for batch executing a Maven tool
  * using the information provided in an {@link ExecutorRequest}. This interface is central
  * to the execution of Maven commands and builds, but it does not construct nor fully parses arguments.
  */
-public interface Executor extends AutoCloseable {
-    // Logic borrowed from Commons-Lang3
-    boolean IS_WINDOWS = System.getProperty("os.name", "unknown").startsWith("Windows");
-
-    /**
-     * Maven version string returned when the actual version of Maven cannot be determined.
-     */
-    String UNKNOWN_VERSION = "unknown";
-
+public interface BatchExecutor extends AutoCloseable {
     /**
      * Invokes the tool application using the provided {@link ExecutorRequest}.
      * This method is responsible for executing the command or build
@@ -44,23 +39,24 @@ public interface Executor extends AutoCloseable {
     int execute(ExecutorRequest executorRequest) throws ExecutorException;
 
     /**
-     * Returns the Maven version that this executor points at (would use). This operation, depending on the underlying
-     * implementation, can be costly. If a caller uses this method often, it is the caller's responsibility to
-     * properly cache returned values.
+     * Returns the Maven version that provided {@link ExecutorRequest} point at (would use). This
+     * operation, depending on the underlying implementation, can be costly. If a caller uses this method often, it is
+     * the caller's responsibility to properly cache returned values.
      *
-     * @return a string representing the Maven version or {@link #UNKNOWN_VERSION}
+     * @param executorRequest the request containing all necessary information for the execution
+     * @return a string representing the Maven version or {@link org.apache.maven.executor.Executor#UNKNOWN_VERSION}
      * @throws ExecutorException if an error occurs during the execution process
      */
-    String mavenVersion() throws ExecutorException;
+    String mavenVersion(ExecutorRequest executorRequest) throws ExecutorException;
 
     /**
-     * Closes and disposes of this {@link Executor} instance, releasing any resources it may hold.
+     * Closes and disposes of this {@link BatchExecutor} instance, releasing any resources it may hold.
      * This method is called automatically when using try-with-resources statements.
      *
      * <p>The default implementation does nothing. Subclasses should override this method
      * if they need to perform cleanup operations.</p>
      *
-     * @throws ExecutorException if an error occurs while closing the {@link Executor}
+     * @throws ExecutorException if an error occurs while closing the {@link BatchExecutor}
      */
     @Override
     void close() throws ExecutorException;

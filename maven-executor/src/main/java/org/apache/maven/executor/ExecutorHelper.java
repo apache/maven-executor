@@ -18,10 +18,44 @@
  */
 package org.apache.maven.executor;
 
+import java.nio.file.Path;
+
+import org.apache.maven.executor.embedded.EmbeddedMavenExecutor;
+import org.apache.maven.executor.forked.ForkedMavenExecutor;
+import org.apache.maven.executor.support.ExecutorHelperImpl;
+
 /**
  * Helper class for routing Maven execution based on preferences and/or issued execution requests.
  */
-public interface ExecutorHelper {
+public interface ExecutorHelper extends Executor {
+    /**
+     * Creates {@link ExecutorHelper} along with needed executors using provided installation directory. Created instance
+     * will assume that provided executors <em>are managed by itself</em>, and on close will close them as well.
+     *
+     * @param installationDirectory The Maven Home (installation) directory.
+     * @param defaultMode The default mode of helper.
+     * @return New instance of helper that will create executors, and close them when is closed.
+     */
+    static ExecutorHelper forMavenInstallation(Path installationDirectory, Mode defaultMode) {
+        Path mavenHome = ExecutorRequest.getCanonicalPath(installationDirectory);
+        EmbeddedMavenExecutor embedded = new EmbeddedMavenExecutor(mavenHome);
+        ForkedMavenExecutor forked = new ForkedMavenExecutor(mavenHome);
+        return new ExecutorHelperImpl(defaultMode, embedded, forked, true);
+    }
+
+    /**
+     * Creates {@link ExecutorHelper} instance with provided default mode and provided executors. Created instance
+     * will assume that provided executors are <em>managed by caller</em>, and on close will not close them.
+     *
+     * @param defaultMode The default mode of helper.
+     * @param embedded The embedded executor to use.
+     * @param forked The forked executor to use.
+     * @return New instance of helper that will not close provided executors when is closed.
+     */
+    static ExecutorHelper forExecutors(Mode defaultMode, EmbeddedMavenExecutor embedded, ForkedMavenExecutor forked) {
+        return new ExecutorHelperImpl(defaultMode, embedded, forked, false);
+    }
+
     /**
      * The modes of execution.
      */
@@ -48,12 +82,6 @@ public interface ExecutorHelper {
     Mode getDefaultMode();
 
     /**
-     * Creates pre-populated builder for {@link ExecutorRequest}. Users of helper must use this method to create
-     * properly initialized request builder.
-     */
-    ExecutorRequest.Builder executorRequest();
-
-    /**
      * Executes the request with preferred mode executor.
      */
     default int execute(ExecutorRequest executorRequest) throws ExecutorException {
@@ -64,12 +92,4 @@ public interface ExecutorHelper {
      * Executes the request with passed in mode executor.
      */
     int execute(Mode mode, ExecutorRequest executorRequest) throws ExecutorException;
-
-    /**
-     * High level operation, returns the version of the Maven covered by this helper. This method call caches
-     * underlying operation, and is safe to invoke as many times needed.
-     *
-     * @see Executor#mavenVersion(ExecutorRequest)
-     */
-    String mavenVersion();
 }

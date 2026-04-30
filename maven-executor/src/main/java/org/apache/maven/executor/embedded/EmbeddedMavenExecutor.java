@@ -160,14 +160,17 @@ public class EmbeddedMavenExecutor implements Executor {
     }
 
     @Override
-    public String mavenVersion(ExecutorRequest executorRequest) throws ExecutorException {
-        requireNonNull(executorRequest);
+    public String mavenVersion() throws ExecutorException {
         if (closed.get()) {
             throw new ExecutorException("Executor is closed");
         }
-        validate(executorRequest);
         Context context = contextMap.computeIfAbsent(
-                installationDirectory, k -> doCreate(installationDirectory, executorRequest));
+                installationDirectory,
+                k -> doCreate(
+                        installationDirectory,
+                        ExecutorRequest.mavenBuilder()
+                                .userHomeDirectory(ExecutorRequest.discoverUserHomeDirectory())
+                                .build()));
         return context.version;
     }
 

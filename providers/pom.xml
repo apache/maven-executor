@@ -31,7 +31,7 @@
 
   <packaging>pom</packaging>
 
-  <name>Extra providers</name>
+  <name>Extra Providers</name>
 
   <modules>
     <module>docker-exe</module>

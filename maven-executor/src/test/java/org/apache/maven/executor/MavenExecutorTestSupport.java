@@ -168,18 +168,12 @@ public abstract class MavenExecutorTestSupport {
 
     @Test
     void version3() throws Exception {
-        assertEquals(
-                System.getProperty("maven3version"),
-                mavenVersion(
-                        Path.of(Environment.MAVEN3_HOME), customizedRequest().build()));
+        assertEquals(System.getProperty("maven3version"), mavenVersion(Path.of(Environment.MAVEN3_HOME)));
     }
 
     @Test
     void version4() throws Exception {
-        assertEquals(
-                System.getProperty("maven4version"),
-                mavenVersion(
-                        Path.of(Environment.MAVEN4_HOME), customizedRequest().build()));
+        assertEquals(System.getProperty("maven4version"), mavenVersion(Path.of(Environment.MAVEN4_HOME)));
     }
 
     @Test
@@ -350,8 +344,8 @@ public abstract class MavenExecutorTestSupport {
         }
     }
 
-    protected String mavenVersion(Path installationDirectory, ExecutorRequest request) throws Exception {
-        return createAndMemoizeExecutor(installationDirectory).mavenVersion(request);
+    protected String mavenVersion(Path installationDirectory) throws Exception {
+        return createAndMemoizeExecutor(installationDirectory).mavenVersion();
     }
 
     protected ExecutorRequest.Builder customizedRequest() {

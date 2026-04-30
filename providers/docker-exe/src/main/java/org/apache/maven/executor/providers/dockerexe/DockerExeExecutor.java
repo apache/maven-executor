@@ -110,11 +110,12 @@ public class DockerExeExecutor extends ProcessBuilderExecutorSupport implements 
     }
 
     @Override
-    public String mavenVersion(ExecutorRequest executorRequest) throws ExecutorException {
+    public String mavenVersion() throws ExecutorException {
         return cache.computeIfAbsent("maven.version", k -> {
             ByteArrayOutputStream stdOut = new ByteArrayOutputStream();
             ByteArrayOutputStream stdErr = new ByteArrayOutputStream();
-            int exitCode = execute(executorRequest.toBuilder()
+            int exitCode = execute(ExecutorRequest.mavenBuilder()
+                    .userHomeDirectory(ExecutorRequest.discoverUserHomeDirectory())
                     .command(ExecutorRequest.MVN)
                     .arguments("-q", "-v")
                     .stdOut(stdOut)

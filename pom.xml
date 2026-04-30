@@ -39,6 +39,7 @@
   <modules>
     <module>test-utilities</module>
     <module>maven-executor</module>
+    <module>maven-batch-executor</module>
     <module>providers</module>
     <module>maven-executor-plugin</module>
   </modules>
