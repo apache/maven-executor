@@ -20,6 +20,7 @@ on:
   push:
     branches:
       - main
+      - executor-1.x
   workflow_dispatch:
 
 jobs:

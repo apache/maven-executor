@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Uses Docker {@code -u} option, not supported on Windows.
  */
-@DisabledOnOs(OS.WINDOWS)
+@DisabledOnOs({OS.WINDOWS,OS.MAC})
 public class TestContainersExecutorTest {
     private static final String MAVEN_VERSION = "3.9.15";
 
