@@ -28,7 +28,7 @@
   </parent>
   <groupId>org.apache.maven.executor</groupId>
   <artifactId>executor</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>2.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Apache Maven Executor</name>
@@ -68,7 +68,7 @@
   <properties>
     <javaVersion>17</javaVersion>
     <maven.site.path>executor-archives/executor-LATEST</maven.site.path>
-    <project.build.outputTimestamp>2026-04-29T21:22:14Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-04-30T20:09:29Z</project.build.outputTimestamp>
     <testTmpDir>${project.build.directory}/tmp</testTmpDir>
 
     <version.maven3>3.9.15</version.maven3>
