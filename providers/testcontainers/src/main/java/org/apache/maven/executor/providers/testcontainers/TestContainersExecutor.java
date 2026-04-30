@@ -44,7 +44,7 @@ import org.testcontainers.utility.DockerImageName;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Executor that uses {@link org.testcontainers.Testcontainers} to run <a href="https://hub.docker.com/_/maven">Maven Docker image</a>.
+ * Executor that uses {@link org.testcontainers.Testcontainers} to execute request.
  */
 public class TestContainersExecutor implements Executor {
     protected final String imageName;
