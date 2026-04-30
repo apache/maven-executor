@@ -164,4 +164,11 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <!-- This is just an empty profile to not fail Maven 4 build that uses -P run-its -->
+      <id>run-its</id>
+    </profile>
+  </profiles>
 </project>
