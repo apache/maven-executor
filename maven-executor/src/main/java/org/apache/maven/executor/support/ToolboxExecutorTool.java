@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
-import org.apache.maven.executor.ExecutorHelper;
 import org.apache.maven.executor.ExecutorRequest;
 import org.apache.maven.executor.ExecutorTool;
 
@@ -42,26 +42,20 @@ import static java.util.Objects.requireNonNull;
 public class ToolboxExecutorTool implements ExecutorTool {
     private static final String TOOLBOX_PREFIX = "eu.maveniverse.maven.plugins:toolbox:";
 
-    private final ExecutorHelper helper;
+    private final Executor executor;
     private final String toolboxVersion;
-    private final ExecutorHelper.Mode forceMode;
 
     /**
      * @deprecated Better specify required version yourself. This one is "cemented" to 0.15.8
      */
     @Deprecated
-    public ToolboxExecutorTool(ExecutorHelper helper) {
-        this(helper, "0.15.8");
+    public ToolboxExecutorTool(Executor executor) {
+        this(executor, "0.15.8");
     }
 
-    public ToolboxExecutorTool(ExecutorHelper helper, String toolboxVersion) {
-        this(helper, toolboxVersion, null);
-    }
-
-    public ToolboxExecutorTool(ExecutorHelper helper, String toolboxVersion, ExecutorHelper.Mode forceMode) {
-        this.helper = requireNonNull(helper);
+    public ToolboxExecutorTool(Executor executor, String toolboxVersion) {
+        this.executor = requireNonNull(executor);
         this.toolboxVersion = requireNonNull(toolboxVersion);
-        this.forceMode = forceMode; // nullable
     }
 
     @Override
@@ -132,7 +126,7 @@ public class ToolboxExecutorTool implements ExecutorTool {
     }
 
     private ExecutorRequest.Builder mojo(ExecutorRequest.Builder builder, String mojo) {
-        if (helper.mavenVersion().startsWith("4.")) {
+        if (executor.mavenVersion().startsWith("4.")) {
             builder.argument("--raw-streams");
         }
         return builder.argument(TOOLBOX_PREFIX + toolboxVersion + ":" + mojo)
@@ -142,7 +136,7 @@ public class ToolboxExecutorTool implements ExecutorTool {
 
     private void doExecute(ExecutorRequest.Builder builder) {
         ExecutorRequest request = builder.build();
-        int ec = forceMode == null ? helper.execute(request) : helper.execute(forceMode, request);
+        int ec = executor.execute(request);
         if (ec != 0) {
             throw new ExecutorException("Unexpected exit code=" + ec + "; stdout="
                     + request.stdOut().orElse(null) + "; stderr="

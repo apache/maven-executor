@@ -75,7 +75,7 @@
     <version.maven3resolver>1.9.27</version.maven3resolver>
     <version.maven4>4.0.0-rc-5</version.maven4>
 
-    <version.slf4j>1.7.36</version.slf4j>
+    <version.slf4j>2.0.17</version.slf4j>
     <versions.junit5>6.0.3</versions.junit5>
     <version.mockito>5.23.0</version.mockito>
   </properties>
@@ -187,6 +187,13 @@
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-simple</artifactId>
         <version>${version.slf4j}</version>
+      </dependency>
+
+      <!-- javax.script -->
+      <dependency>
+        <groupId>org.apache.groovy</groupId>
+        <artifactId>groovy-jsr223</artifactId>
+        <version>5.0.5</version>
       </dependency>
 
       <!-- test dependencies -->

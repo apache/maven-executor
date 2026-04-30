@@ -73,14 +73,12 @@ public class ExecutorHelperImpl implements ExecutorHelper {
         if (closed.get()) {
             throw new ExecutorException("Executor is closed");
         }
-        return cache.computeIfAbsent("maven.version", k -> {
-            return getExecutor(
-                            Mode.AUTO,
-                            ExecutorRequest.mavenBuilder()
-                                    .userHomeDirectory(ExecutorRequest.discoverUserHomeDirectory())
-                                    .build())
-                    .mavenVersion();
-        });
+        return cache.computeIfAbsent("maven.version", k -> getExecutor(
+                        Mode.AUTO,
+                        ExecutorRequest.mavenBuilder()
+                                .userHomeDirectory(ExecutorRequest.discoverUserHomeDirectory())
+                                .build())
+                .mavenVersion());
     }
 
     @Override

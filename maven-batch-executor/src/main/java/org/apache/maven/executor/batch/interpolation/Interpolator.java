@@ -35,7 +35,14 @@ public interface Interpolator {
      * Creates "standard" Maven interpolator that uses {@code "$"} as expression marker.
      */
     static Interpolator defaultMavenInterpolator() {
-        return new DefaultInterpolator('\\', "$");
+        return interpolator("$");
+    }
+
+    /**
+     * Creates Maven interpolator that uses provided string as expression marker (ie "$" or "@").
+     */
+    static Interpolator interpolator(String expressionMarker) {
+        return new DefaultInterpolator('\\', expressionMarker);
     }
 
     /**

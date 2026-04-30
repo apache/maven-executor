@@ -16,14 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.maven.executor.batch;
 
-module org.apache.maven.executor.batch {
-    requires transitive org.apache.maven.executor;
-    requires transitive org.slf4j;
-    requires transitive java.scripting;
+import java.util.List;
+import java.util.Map;
 
-    exports org.apache.maven.executor.batch;
-    exports org.apache.maven.executor.batch.collector;
-    exports org.apache.maven.executor.batch.interpolation;
-    exports org.apache.maven.executor.batch.steps;
+import org.apache.maven.executor.batch.steps.Environment;
+import org.apache.maven.executor.batch.steps.Execution;
+
+/**
+ * Represents a batch of requests to execute Maven with.
+ */
+public interface BatchExecutorResult {
+    /**
+     * The request this is result of.
+     */
+    BatchExecutorRequest request();
+
+    /**
+     * Step contexts and chain of steps.
+     */
+    Map<Environment, List<Execution.Result>> results();
 }

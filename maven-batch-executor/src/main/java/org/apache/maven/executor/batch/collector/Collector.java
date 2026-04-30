@@ -16,14 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.maven.executor.batch.collector;
 
-module org.apache.maven.executor.batch {
-    requires transitive org.apache.maven.executor;
-    requires transitive org.slf4j;
-    requires transitive java.scripting;
+import java.io.IOException;
 
-    exports org.apache.maven.executor.batch;
-    exports org.apache.maven.executor.batch.collector;
-    exports org.apache.maven.executor.batch.interpolation;
-    exports org.apache.maven.executor.batch.steps;
+import org.apache.maven.executor.batch.BatchExecutorRequest;
+
+/**
+ * Collector collects potential test projects and creates {@link BatchExecutorRequest} based on them. It also
+ * performs a copy and interpolation as well.
+ */
+public interface Collector {
+    /**
+     * Collects project, performs needed preparations and builds a batch request.
+     */
+    BatchExecutorRequest collect(CollectorRequest request) throws IOException;
 }

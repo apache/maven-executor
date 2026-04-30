@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.maven.executor.batch.steps;
 
-module org.apache.maven.executor.batch {
-    requires transitive org.apache.maven.executor;
-    requires transitive org.slf4j;
-    requires transitive java.scripting;
-
-    exports org.apache.maven.executor.batch;
-    exports org.apache.maven.executor.batch.collector;
-    exports org.apache.maven.executor.batch.interpolation;
-    exports org.apache.maven.executor.batch.steps;
+/**
+ * Defines one step of batch execution.
+ */
+public interface Step {
+    /**
+     * Executes this step with given context, and may return next step, if applicable.
+     */
+    void execute(StepContext context);
 }

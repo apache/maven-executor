@@ -16,14 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.maven.executor.batch.steps;
 
-module org.apache.maven.executor.batch {
-    requires transitive org.apache.maven.executor;
-    requires transitive org.slf4j;
-    requires transitive java.scripting;
+import org.apache.maven.executor.ExecutorRequest;
 
-    exports org.apache.maven.executor.batch;
-    exports org.apache.maven.executor.batch.collector;
-    exports org.apache.maven.executor.batch.interpolation;
-    exports org.apache.maven.executor.batch.steps;
+import static java.util.Objects.requireNonNull;
+
+/**
+ * The environment with template executor request.
+ *
+ * @param template The template executor request
+ */
+public record Environment(ExecutorRequest template) {
+    public Environment(ExecutorRequest template) {
+        this.template = requireNonNull(template);
+    }
 }
