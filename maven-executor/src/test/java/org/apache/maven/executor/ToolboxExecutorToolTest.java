@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.maven.executor.support;
+package org.apache.maven.executor;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -24,9 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
-import org.apache.maven.executor.Environment;
-import org.apache.maven.executor.ExecutorHelper;
-import org.apache.maven.executor.ExecutorRequest;
+import org.apache.maven.executor.support.ToolboxExecutorTool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
@@ -76,7 +74,7 @@ public class ToolboxExecutorToolTest {
 
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
-    void dump3(ExecutorHelper.Mode mode) throws Exception {
+    void dump3(ExecutorHelper.Mode mode) {
         try (ExecutorHelper helper = ExecutorHelper.forMavenInstallation(mvn3Home(), mode)) {
             Map<String, String> dump =
                     new ToolboxExecutorTool(helper, Environment.TOOLBOX_VERSION).dump(getExecutorRequest());
@@ -87,7 +85,7 @@ public class ToolboxExecutorToolTest {
 
     @ParameterizedTest
     @EnumSource(ExecutorHelper.Mode.class)
-    void dump4(ExecutorHelper.Mode mode) throws Exception {
+    void dump4(ExecutorHelper.Mode mode) {
         try (ExecutorHelper helper = ExecutorHelper.forMavenInstallation(mvn4Home(), mode)) {
             Map<String, String> dump =
                     new ToolboxExecutorTool(helper, Environment.TOOLBOX_VERSION).dump(getExecutorRequest());
