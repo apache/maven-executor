@@ -22,15 +22,16 @@ Maven Executor
 [![Reproducible Builds](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jvm-repo-rebuild/reproducible-central/master/content/org/apache/maven/executor/badge.json)](https://github.com/jvm-repo-rebuild/reproducible-central/blob/master/content/org/apache/maven/executor/README.md)
 
 The Executor suite provides means to execute Maven 3 and Maven 4 programmatically,
-usually as part of some "integration builds" suite for some plugin or extensions.
+usually as part of some "integration builds" suite for some plugin or extensions,
+or Maven itself.
 
 The dependency-less artifact `maven-executor` provides API and two executor
 implementations out of the box: "forked" and "embedded". There are more providers in 
 `providers/` sub-projects. In total, below is list of supported executors:
 * `forked` OOTB with `maven-executor`
 * `embedded` OOTB with `maven-executor`
-* `docker-exe` uses Docker CLI and runs [Apache Maven Docer Image](https://hub.docker.com/_/maven)
-* `testcontainers` uses Docker via TestContainers and runs [Apache Maven Docer Image](https://hub.docker.com/_/maven)
+* `docker-exe` uses Docker CLI and runs [Apache Maven Docker Image](https://hub.docker.com/_/maven)
+* `testcontainers` uses Docker via TestContainers and runs [Apache Maven Docker Image](https://hub.docker.com/_/maven)
 
 Contributing
 ------------
