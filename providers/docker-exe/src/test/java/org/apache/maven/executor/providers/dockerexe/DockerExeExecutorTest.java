@@ -29,6 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DockerExeExecutorTest {
+    private static final String MAVEN_VERSION = "3.9.15";
+
     @Test
     void smoke() throws Exception {
         Path cwd = Path.of("target/test-classes/simple-project");
@@ -40,10 +42,11 @@ public class DockerExeExecutorTest {
                 .userHomeDirectory(cwd)
                 .stdOut(stdOut)
                 .build();
-        try (DockerExeExecutor executor = DockerExeExecutor.withMavenVersion("3.9.15")) {
+        try (DockerExeExecutor executor = DockerExeExecutor.withMavenImageVersion(MAVEN_VERSION)) {
             int exitCode = executor.execute(request);
             assertEquals(0, exitCode);
             assertTrue(stdOut.toString().contains("[INFO] BUILD SUCCESS"));
+            assertEquals(MAVEN_VERSION, executor.mavenVersion(request));
         }
     }
 }

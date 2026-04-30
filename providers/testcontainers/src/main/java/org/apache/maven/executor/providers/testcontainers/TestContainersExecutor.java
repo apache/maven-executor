@@ -19,6 +19,7 @@
 package org.apache.maven.executor.providers.testcontainers;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
@@ -27,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.github.dockerjava.api.DockerClient;
@@ -45,14 +47,34 @@ import static java.util.Objects.requireNonNull;
  * Executor that uses {@link org.testcontainers.Testcontainers} to run <a href="https://hub.docker.com/_/maven">Maven Docker image</a>.
  */
 public class TestContainersExecutor implements Executor {
-    protected final String mavenVersion;
+    protected final String imageName;
+    protected final String imageTag;
+    protected final ConcurrentHashMap<String, String> cache;
 
-    public static TestContainersExecutor withMavenVersion(String mavenVersion) {
-        return new TestContainersExecutor(mavenVersion);
+    /**
+     * Method to create executor that will use <a href="https://hub.docker.com/_/maven">Maven Docker image</a> with
+     * given tag (Maven version).
+     *
+     * @param mavenVersion required param, the Maven version, not {@code null}.
+     */
+    public static TestContainersExecutor withMavenImageVersion(String mavenVersion) {
+        return new TestContainersExecutor("maven", requireNonNull(mavenVersion));
     }
 
-    private TestContainersExecutor(String mavenVersion) {
-        this.mavenVersion = requireNonNull(mavenVersion);
+    /**
+     * Method to create executor that will use given Docker image with optionally provided tag.
+     *
+     * @param imageName required param, the image name to use, not {@code null}.
+     * @param imageTag optional param, the image tag, may be {@code null}.
+     */
+    public static TestContainersExecutor withImage(String imageName, String imageTag) {
+        return new TestContainersExecutor(imageName, imageTag);
+    }
+
+    private TestContainersExecutor(String imageName, String imageTag) {
+        this.imageName = requireNonNull(imageName);
+        this.imageTag = imageTag;
+        this.cache = new ConcurrentHashMap<>();
     }
 
     /**
@@ -72,7 +94,8 @@ public class TestContainersExecutor implements Executor {
         command.addAll(request.arguments());
 
         MemoizingOneShotStartupCheckStrategy startupCheckStrategy = new MemoizingOneShotStartupCheckStrategy();
-        try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("maven:" + mavenVersion))) {
+        try (GenericContainer<?> container =
+                new GenericContainer<>(DockerImageName.parse(imageName + (imageTag != null ? ":" + imageTag : "")))) {
             container
                     .withFileSystemBind(request.userHomeDirectory().toString(), "/var/maven-home/")
                     .withFileSystemBind(request.cwd().toString(), "/var/maven-project")
@@ -100,7 +123,22 @@ public class TestContainersExecutor implements Executor {
 
     @Override
     public String mavenVersion(ExecutorRequest executorRequest) throws ExecutorException {
-        return mavenVersion;
+        return cache.computeIfAbsent("maven.version", k -> {
+            ByteArrayOutputStream stdOut = new ByteArrayOutputStream();
+            ByteArrayOutputStream stdErr = new ByteArrayOutputStream();
+            int exitCode = execute(executorRequest.toBuilder()
+                    .command(ExecutorRequest.MVN)
+                    .arguments("-q", "-v")
+                    .stdOut(stdOut)
+                    .stdErr(stdErr)
+                    .build());
+            if (exitCode == 0) {
+                return stdOut.toString().trim();
+            } else {
+                throw new ExecutorException(
+                        "Unexpected exit code: " + exitCode + "; stdout = " + stdOut + "; stderr = " + stdErr);
+            }
+        });
     }
 
     private static int detectUid(Path userHome) {
