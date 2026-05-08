@@ -22,15 +22,17 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.apache.maven.executor</groupId>
-    <artifactId>executor</artifactId>
+    <groupId>org.apache.maven</groupId>
+    <artifactId>maven-executor</artifactId>
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
+  <groupId>org.apache.maven.executor</groupId>
   <artifactId>test-utilities</artifactId>
   <packaging>jar</packaging>
 
   <name>Test Utilities</name>
+  <description>Maven Executor Test Utilities</description>
 
   <dependencies>
     <dependency>
