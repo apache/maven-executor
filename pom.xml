@@ -17,7 +17,7 @@
   ~ specific language governing permissions and limitations
   ~ under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -26,8 +26,8 @@
     <version>47</version>
     <relativePath />
   </parent>
-  <groupId>org.apache.maven.executor</groupId>
-  <artifactId>executor</artifactId>
+  <groupId>org.apache.maven</groupId>
+  <artifactId>maven-executor</artifactId>
   <version>2.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
@@ -47,7 +47,7 @@
   <scm>
     <connection>scm:git:https://gitbox.apache.org/repos/asf/maven-executor.git</connection>
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/maven-executor.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>main</tag>
     <url>https://github.com/apache/maven-executor/tree/${project.scm.tag}</url>
   </scm>
   <issueManagement>
@@ -259,4 +259,30 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>reporting</id>
+      <reporting>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <failOnError>false</failOnError>
+            </configuration>
+            <reportSets>
+              <reportSet>
+                <id>aggregate</id>
+                <reports>
+                  <report>aggregate</report>
+                </reports>
+                <inherited>false</inherited>
+              </reportSet>
+            </reportSets>
+          </plugin>
+        </plugins>
+      </reporting>
+    </profile>
+  </profiles>
 </project>

@@ -18,12 +18,12 @@ Maven Executor
 ==============
 
 [![Apache License, Version 2.0, January 2004](https://img.shields.io/github/license/apache/maven-executor.svg?label=License)][license]
-[![Maven Central](https://img.shields.io/maven-central/v/org.apache.maven.plugins/maven-executor-plugin.svg?label=Maven%20Central)](https://search.maven.org/artifact/org.apache.maven.plugins/maven-executor-plugin)
+[![Maven Central](https://img.shields.io/maven-central/v/org.apache.maven.executor/maven-executor.svg?label=Maven%20Central)](https://search.maven.org/artifact/org.apache.maven.executor/maven-executor)
 [![Reproducible Builds](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jvm-repo-rebuild/reproducible-central/master/content/org/apache/maven/executor/badge.json)](https://github.com/jvm-repo-rebuild/reproducible-central/blob/master/content/org/apache/maven/executor/README.md)
 
 The Executor suite provides means to execute Maven 3 and Maven 4 programmatically,
 usually as part of some "integration builds" suite for some plugin or extensions,
-or Maven itself.
+or Maven itself. It is meant to replace [maven-invoker](https://github.com/apache/maven-invoker/) and [maven-verifier](https://github.com/apache/maven-verifier/).
 
 The dependency-less artifact `maven-executor` provides API and two executor
 implementations out of the box: "forked" and "embedded". There are more providers in 
@@ -36,8 +36,8 @@ implementations out of the box: "forked" and "embedded". There are more provider
 Versions and Branches
 ---------------------
 
-Maven Executor 1.x line will contain **only** the executor bits, needed to run Maven ITs.
-Maven Executor 2.x line will add extra features a top of executors.
+Maven Executor 1.x line contains **only** the executor components extracted from Maven 4.0.0-RC, needed to run Maven ITs.
+Maven Executor 2.x line will add extra features a top of executors, like a Maven plugin.
 
 Development should happen against **main** branch. In case of need, improvements may be
 back-ported to `executor-1.x` branch, to release patch releases, but in general, the
