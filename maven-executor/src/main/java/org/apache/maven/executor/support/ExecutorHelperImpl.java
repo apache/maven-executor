@@ -27,6 +27,7 @@ import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorHelper;
 import org.apache.maven.executor.ExecutorRequest;
+import org.apache.maven.executor.ExecutorResult;
 import org.apache.maven.executor.embedded.EmbeddedMavenExecutor;
 import org.apache.maven.executor.forked.ForkedMavenExecutor;
 
@@ -61,7 +62,7 @@ public class ExecutorHelperImpl implements ExecutorHelper {
     }
 
     @Override
-    public int execute(Mode mode, ExecutorRequest executorRequest) throws ExecutorException {
+    public ExecutorResult execute(Mode mode, ExecutorRequest executorRequest) throws ExecutorException {
         if (closed.get()) {
             throw new ExecutorException("Executor is closed");
         }
@@ -107,15 +108,21 @@ public class ExecutorHelperImpl implements ExecutorHelper {
     }
 
     protected Executor getExecutor(Mode mode, ExecutorRequest request) throws ExecutorException {
-        return switch (mode) {
-            case AUTO -> getExecutorByRequest(request);
-            case EMBEDDED -> executors.get(Mode.EMBEDDED);
-            case FORKED -> executors.get(Mode.FORKED);
-        };
+        switch (mode) {
+            case AUTO:
+                return getExecutorByRequest(request);
+            case EMBEDDED:
+                return executors.get(Mode.EMBEDDED);
+            case FORKED:
+                return executors.get(Mode.FORKED);
+            default:
+                throw new ExecutorException("Unknown mode: " + mode);
+        }
     }
 
     protected Executor getExecutorByRequest(ExecutorRequest request) {
-        if (request.environmentVariables().isEmpty() && request.jvmArguments().isEmpty()) {
+        if (!request.environmentVariables().isPresent()
+                && !request.jvmArguments().isPresent()) {
             return getExecutor(Mode.EMBEDDED, request);
         } else {
             return getExecutor(Mode.FORKED, request);

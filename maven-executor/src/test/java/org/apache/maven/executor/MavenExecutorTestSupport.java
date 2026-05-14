@@ -20,11 +20,14 @@ package org.apache.maven.executor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.List;
+import java.util.Collections;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.AfterAll;
@@ -52,13 +55,21 @@ public abstract class MavenExecutorTestSupport {
 
     @BeforeEach
     void beforeEach(TestInfo testInfo) throws Exception {
-        cwd = tempDir.resolve(testInfo.getTestMethod().orElseThrow().getName()).resolve("cwd");
+        cwd = tempDir.resolve(testInfo.getTestMethod()
+                        .orElseThrow(() -> new NoSuchElementException("No such element"))
+                        .getName())
+                .resolve("cwd");
         Files.createDirectories(cwd.resolve(".mvn"));
-        userHome = tempDir.resolve(testInfo.getTestMethod().orElseThrow().getName())
+        userHome = tempDir.resolve(testInfo.getTestMethod()
+                        .orElseThrow(() -> new NoSuchElementException("No such element"))
+                        .getName())
                 .resolve("home");
         Files.createDirectories(userHome);
 
-        System.out.println("=== " + testInfo.getTestMethod().orElseThrow().getName());
+        System.out.println("=== "
+                + testInfo.getTestMethod()
+                        .orElseThrow(() -> new NoSuchElementException("No such element"))
+                        .getName());
     }
 
     private static final Map<Path, Executor> EXECUTORS = new ConcurrentHashMap<>();
@@ -81,9 +92,9 @@ public abstract class MavenExecutorTestSupport {
     void mvnenc4() throws Exception {
         String logfile = "m4.log";
         execute(
-                Path.of(Environment.MAVEN4_HOME),
+                Paths.get(Environment.MAVEN4_HOME),
                 cwd.resolve(logfile),
-                List.of(customizedRequest()
+                Collections.singletonList(customizedRequest()
                         .command("mvnenc")
                         .cwd(cwd)
                         .userHomeDirectory(userHome)
@@ -91,7 +102,7 @@ public abstract class MavenExecutorTestSupport {
                         .argument("-l")
                         .argument(logfile)
                         .build()));
-        System.out.println(Files.readString(cwd.resolve(logfile)));
+        System.out.println(readString(cwd.resolve(logfile)));
     }
 
     @DisabledOnOs(
@@ -101,32 +112,32 @@ public abstract class MavenExecutorTestSupport {
     void dump3() throws Exception {
         String logfile = "m3.log";
         execute(
-                Path.of(Environment.MAVEN3_HOME),
+                Paths.get(Environment.MAVEN3_HOME),
                 cwd.resolve(logfile),
-                List.of(customizedRequest()
+                Collections.singletonList(customizedRequest()
                         .cwd(cwd)
                         .userHomeDirectory(userHome)
                         .argument("eu.maveniverse.maven.plugins:toolbox:" + Environment.TOOLBOX_VERSION + ":gav-dump")
                         .argument("-l")
                         .argument(logfile)
                         .build()));
-        System.out.println(Files.readString(cwd.resolve(logfile)));
+        System.out.println(readString(cwd.resolve(logfile)));
     }
 
     @Test
     void dump4() throws Exception {
         String logfile = "m4.log";
         execute(
-                Path.of(Environment.MAVEN4_HOME),
+                Paths.get(Environment.MAVEN4_HOME),
                 cwd.resolve(logfile),
-                List.of(customizedRequest()
+                Collections.singletonList(customizedRequest()
                         .cwd(cwd)
                         .userHomeDirectory(userHome)
                         .argument("eu.maveniverse.maven.plugins:toolbox:" + Environment.TOOLBOX_VERSION + ":gav-dump")
                         .argument("-l")
                         .argument(logfile)
                         .build()));
-        System.out.println(Files.readString(cwd.resolve(logfile)));
+        System.out.println(readString(cwd.resolve(logfile)));
     }
 
     @DisabledOnOs(
@@ -137,16 +148,16 @@ public abstract class MavenExecutorTestSupport {
         layDownFiles(cwd);
         String logfile = "m3.log";
         execute(
-                Path.of(Environment.MAVEN3_HOME),
+                Paths.get(Environment.MAVEN3_HOME),
                 cwd.resolve(logfile),
-                List.of(customizedRequest()
+                Collections.singletonList(customizedRequest()
                         .cwd(cwd)
                         .argument("-V")
                         .argument("verify")
                         .argument("-l")
                         .argument(logfile)
                         .build()));
-        System.out.println(Files.readString(cwd.resolve(logfile)));
+        System.out.println(readString(cwd.resolve(logfile)));
     }
 
     @Test
@@ -154,26 +165,26 @@ public abstract class MavenExecutorTestSupport {
         layDownFiles(cwd);
         String logfile = "m4.log";
         execute(
-                Path.of(Environment.MAVEN4_HOME),
+                Paths.get(Environment.MAVEN4_HOME),
                 cwd.resolve(logfile),
-                List.of(customizedRequest()
+                Collections.singletonList(customizedRequest()
                         .cwd(cwd)
                         .argument("-V")
                         .argument("verify")
                         .argument("-l")
                         .argument(logfile)
                         .build()));
-        System.out.println(Files.readString(cwd.resolve(logfile)));
+        System.out.println(readString(cwd.resolve(logfile)));
     }
 
     @Test
     void version3() throws Exception {
-        assertEquals(System.getProperty("maven3version"), mavenVersion(Path.of(Environment.MAVEN3_HOME)));
+        assertEquals(System.getProperty("maven3version"), mavenVersion(Paths.get(Environment.MAVEN3_HOME)));
     }
 
     @Test
     void version4() throws Exception {
-        assertEquals(System.getProperty("maven4version"), mavenVersion(Path.of(Environment.MAVEN4_HOME)));
+        assertEquals(System.getProperty("maven4version"), mavenVersion(Paths.get(Environment.MAVEN4_HOME)));
     }
 
     @Test
@@ -181,9 +192,9 @@ public abstract class MavenExecutorTestSupport {
         layDownFiles(cwd);
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         execute(
-                Path.of(Environment.MAVEN4_HOME),
+                Paths.get(Environment.MAVEN4_HOME),
                 null,
-                List.of(customizedRequest()
+                Collections.singletonList(customizedRequest()
                         .cwd(cwd)
                         .argument("-V")
                         .argument("verify")
@@ -199,9 +210,9 @@ public abstract class MavenExecutorTestSupport {
         layDownFiles(cwd);
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         execute(
-                Path.of(Environment.MAVEN4_HOME),
+                Paths.get(Environment.MAVEN4_HOME),
                 null,
-                List.of(customizedRequest()
+                Collections.singletonList(customizedRequest()
                         .cwd(cwd)
                         .argument("-V")
                         .argument("verify")
@@ -218,9 +229,9 @@ public abstract class MavenExecutorTestSupport {
         layDownFiles(cwd);
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         execute(
-                Path.of(Environment.MAVEN4_HOME),
+                Paths.get(Environment.MAVEN4_HOME),
                 null,
-                List.of(customizedRequest()
+                Collections.singletonList(customizedRequest()
                         .cwd(cwd)
                         .argument("-V")
                         .argument("verify")
@@ -237,9 +248,9 @@ public abstract class MavenExecutorTestSupport {
         layDownFiles(cwd);
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         execute(
-                Path.of(Environment.MAVEN3_HOME),
+                Paths.get(Environment.MAVEN3_HOME),
                 null,
-                List.of(customizedRequest()
+                Collections.singletonList(customizedRequest()
                         .cwd(cwd)
                         .argument("-V")
                         .argument("verify")
@@ -256,9 +267,9 @@ public abstract class MavenExecutorTestSupport {
         layDownFiles(cwd);
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         execute(
-                Path.of(Environment.MAVEN3_HOME),
+                Paths.get(Environment.MAVEN3_HOME),
                 null,
-                List.of(customizedRequest()
+                Collections.singletonList(customizedRequest()
                         .cwd(cwd)
                         .argument("-V")
                         .argument("verify")
@@ -275,9 +286,9 @@ public abstract class MavenExecutorTestSupport {
         layDownFiles(cwd);
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         execute(
-                Path.of(Environment.MAVEN3_HOME),
+                Paths.get(Environment.MAVEN3_HOME),
                 null,
-                List.of(customizedRequest()
+                Collections.singletonList(customizedRequest()
                         .cwd(cwd)
                         .argument("-V")
                         .argument("verify")
@@ -289,57 +300,53 @@ public abstract class MavenExecutorTestSupport {
         assertTrue(stdout.toString().contains("INFO"), "No INFO found");
     }
 
-    public static final String POM_STRING = """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
+    public static final String POM_STRING = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+            + "                <project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
+            + "                         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd\">\n"
+            + "\n"
+            + "                    <modelVersion>4.0.0</modelVersion>\n"
+            + "\n"
+            + "                    <groupId>org.apache.maven.samples</groupId>\n"
+            + "                    <artifactId>sample</artifactId>\n"
+            + "                    <version>1.0.0</version>\n"
+            + "\n"
+            + "                    <dependencyManagement>\n"
+            + "                      <dependencies>\n"
+            + "                        <dependency>\n"
+            + "                          <groupId>org.junit</groupId>\n"
+            + "                          <artifactId>junit-bom</artifactId>\n"
+            + "                          <version>5.11.1</version>\n"
+            + "                          <type>pom</type>\n"
+            + "                          <scope>import</scope>\n"
+            + "                        </dependency>\n"
+            + "                      </dependencies>\n"
+            + "                    </dependencyManagement>\n"
+            + "\n"
+            + "                    <dependencies>\n"
+            + "                      <dependency>\n"
+            + "                        <groupId>org.junit.jupiter</groupId>\n"
+            + "                        <artifactId>junit-jupiter-api</artifactId>\n"
+            + "                        <scope>test</scope>\n"
+            + "                      </dependency>\n"
+            + "                    </dependencies>\n"
+            + "\n"
+            + "                </project>";
 
-                    <modelVersion>4.0.0</modelVersion>
-
-                    <groupId>org.apache.maven.samples</groupId>
-                    <artifactId>sample</artifactId>
-                    <version>1.0.0</version>
-
-                    <dependencyManagement>
-                      <dependencies>
-                        <dependency>
-                          <groupId>org.junit</groupId>
-                          <artifactId>junit-bom</artifactId>
-                          <version>5.11.1</version>
-                          <type>pom</type>
-                          <scope>import</scope>
-                        </dependency>
-                      </dependencies>
-                    </dependencyManagement>
-
-                    <dependencies>
-                      <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter-api</artifactId>
-                        <scope>test</scope>
-                      </dependency>
-                    </dependencies>
-
-                </project>
-                """;
-
-    public static final String APP_JAVA_STRING = """
-            package org.apache.maven.samples.sample;
-
-            public class App {
-                public static void main(String... args) {
-                    System.out.println("Hello World!");
-                }
-            }
-            """;
+    public static final String APP_JAVA_STRING = "            package org.apache.maven.samples.sample;\n" + "\n"
+            + "            public class App {\n"
+            + "                public static void main(String... args) {\n"
+            + "                    System.out.println(\"Hello World!\");\n"
+            + "                }\n"
+            + "            }";
 
     protected void execute(Path installationDirectory, Path logFile, Collection<ExecutorRequest> requests)
             throws Exception {
         Executor invoker = createAndMemoizeExecutor(installationDirectory);
         for (ExecutorRequest request : requests) {
-            int exitCode = invoker.execute(request);
+            ExecutorResult result = invoker.execute(request);
+            int exitCode = result.exitCode().orElseThrow(() -> new NoSuchElementException("No such element"));
             if (exitCode != 0) {
-                throw new FailedExecution(request, exitCode, logFile == null ? "" : Files.readString(logFile));
+                throw new FailedExecution(request, exitCode, logFile == null ? "" : readString(logFile));
             }
         }
     }
@@ -363,10 +370,10 @@ public abstract class MavenExecutorTestSupport {
 
     protected void layDownFiles(Path cwd) throws IOException {
         Path pom = cwd.resolve("pom.xml").toAbsolutePath();
-        Files.writeString(pom, POM_STRING);
+        writeString(pom, POM_STRING);
         Path appJava = cwd.resolve("src/main/java/org/apache/maven/samples/sample/App.java");
         Files.createDirectories(appJava.getParent());
-        Files.writeString(appJava, APP_JAVA_STRING);
+        writeString(appJava, APP_JAVA_STRING);
     }
 
     protected static class FailedExecution extends Exception {
@@ -392,5 +399,13 @@ public abstract class MavenExecutorTestSupport {
         public String getLog() {
             return log;
         }
+    }
+
+    private static String readString(Path path) throws IOException {
+        return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+    }
+
+    private static void writeString(Path path, String content) throws IOException {
+        Files.write(path, content.getBytes(StandardCharsets.UTF_8));
     }
 }

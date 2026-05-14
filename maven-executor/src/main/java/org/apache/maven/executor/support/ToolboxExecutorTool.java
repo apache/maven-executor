@@ -23,12 +23,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorRequest;
+import org.apache.maven.executor.ExecutorResult;
 import org.apache.maven.executor.ExecutorTool;
 
 import static java.util.Objects.requireNonNull;
@@ -136,7 +138,8 @@ public class ToolboxExecutorTool implements ExecutorTool {
 
     private void doExecute(ExecutorRequest.Builder builder) {
         ExecutorRequest request = builder.build();
-        int ec = executor.execute(request);
+        ExecutorResult result = executor.execute(request);
+        int ec = result.exitCode().orElseThrow(() -> new NoSuchElementException("No such element"));
         if (ec != 0) {
             throw new ExecutorException("Unexpected exit code=" + ec + "; stdout="
                     + request.stdOut().orElse(null) + "; stderr="

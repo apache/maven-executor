@@ -18,7 +18,6 @@
  */
 package org.apache.maven.executor.forked;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,11 +25,13 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorRequest;
+import org.apache.maven.executor.ExecutorResult;
 import org.apache.maven.executor.support.ProcessBuilderExecutorSupport;
 
 import static java.util.Objects.requireNonNull;
@@ -54,7 +55,7 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
     }
 
     @Override
-    public int execute(ExecutorRequest executorRequest) throws ExecutorException {
+    public ExecutorResult execute(ExecutorRequest executorRequest) throws ExecutorException {
         requireNonNull(executorRequest);
         if (closed.get()) {
             throw new ExecutorException("Executor is closed");
@@ -72,24 +73,21 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
         try {
             Path cwd = Files.createTempDirectory("forked-executor-maven-version");
             try {
-                ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-                int exitCode = execute(ExecutorRequest.mavenBuilder()
+                ExecutorResult result = execute(ExecutorRequest.mavenBuilder()
                         .cwd(cwd)
                         .userHomeDirectory(ExecutorRequest.discoverUserHomeDirectory())
-                        .arguments(List.of("--version", "--quiet"))
-                        .stdOut(stdout)
+                        .arguments(Arrays.asList("--version", "--quiet"))
                         .build());
+                int exitCode = result.exitCode().orElseThrow(() -> new NoSuchElementException("No such element"));
                 if (exitCode == 0) {
-                    if (stdout.size() > 0) {
-                        return stdout.toString()
-                                .replace("\n", "")
-                                .replace("\r", "")
-                                .trim();
+                    String stdout = result.stdOutString().orElse("");
+                    if (!stdout.isEmpty()) {
+                        return stdout.replace("\n", "").replace("\r", "").trim();
                     }
                     return UNKNOWN_VERSION;
                 } else {
-                    throw new ExecutorException(
-                            "Maven version query unexpected exitCode=" + exitCode + "\nLog: " + stdout);
+                    throw new ExecutorException("Maven version query unexpected exitCode=" + exitCode + "\nLog: "
+                            + result.stdOutString().orElse(""));
                 }
             } finally {
                 Files.deleteIfExists(cwd);
@@ -101,21 +99,21 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
 
     protected void validate(ExecutorRequest executorRequest) throws ExecutorException {}
 
-    protected int doExecute(ExecutorRequest executorRequest) throws ExecutorException {
+    protected ExecutorResult doExecute(ExecutorRequest executorRequest) throws ExecutorException {
         ArrayList<String> cmdAndArguments = new ArrayList<>();
-        cmdAndArguments.add(installationDirectory
+        cmdAndArguments.add(mayQuoteAndEscape(installationDirectory
                 .resolve("bin")
                 .resolve(IS_WINDOWS ? executorRequest.command() + ".cmd" : executorRequest.command())
-                .toString());
+                .toString()));
 
         String mavenArgsEnv = System.getenv("MAVEN_ARGS");
         if (useMavenArgsEnv && mavenArgsEnv != null && !mavenArgsEnv.isEmpty()) {
             Arrays.stream(mavenArgsEnv.split(" "))
                     .filter(s -> !s.trim().isEmpty())
-                    .forEach(cmdAndArguments::add);
+                    .forEach(a -> cmdAndArguments.add(mayQuoteAndEscape(a)));
         }
 
-        cmdAndArguments.addAll(executorRequest.arguments());
+        executorRequest.arguments().forEach(a -> cmdAndArguments.add(mayQuoteAndEscape(a)));
 
         ArrayList<String> jvmArgs = new ArrayList<>();
         if (!executorRequest.userHomeDirectory().equals(getCanonicalPath(Paths.get(System.getProperty("user.home"))))) {
@@ -127,7 +125,7 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
         if (executorRequest.jvmSystemProperties().isPresent()) {
             jvmArgs.addAll(executorRequest.jvmSystemProperties().get().entrySet().stream()
                     .map(e -> "-D" + e.getKey() + "=" + e.getValue())
-                    .toList());
+                    .collect(Collectors.toList()));
         }
 
         HashMap<String, String> env = new HashMap<>();
@@ -148,8 +146,19 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
             env.put("MAVEN_SKIP_RC", "true");
         }
 
+        // Adjust the process invocation to circumvent possible limited buffers
+        ArrayList<String> command = new ArrayList<>();
+        if (IS_WINDOWS) {
+            command.add("cmd.exe");
+            command.add("/c");
+        } else {
+            command.add("sh");
+            command.add("-c");
+        }
+        command.add(cmdAndArguments.stream().map(this::mayQuoteAndEscape).collect(Collectors.joining(" ")));
+
         ProcessBuilder pb =
-                new ProcessBuilder().directory(executorRequest.cwd().toFile()).command(cmdAndArguments);
+                new ProcessBuilder().directory(executorRequest.cwd().toFile()).command(command);
         if (!env.isEmpty()) {
             pb.environment().putAll(env);
         }

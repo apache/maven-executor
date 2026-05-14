@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.file.Path;
 
 import org.apache.maven.executor.ExecutorRequest;
+import org.apache.maven.executor.ExecutorResult;
 import org.apache.maven.executor.test.TestProjects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -49,8 +50,9 @@ public class DockerExeExecutorTest {
                 .stdOut(stdOut)
                 .build();
         try (DockerExeExecutor executor = DockerExeExecutor.withMavenImageVersion(MAVEN_VERSION)) {
-            int exitCode = executor.execute(request);
-            assertEquals(0, exitCode);
+            ExecutorResult result = executor.execute(request);
+            assertTrue(result.success());
+            assertEquals(0, result.exitCode().orElse(-1));
             assertTrue(stdOut.toString().contains("[INFO] BUILD SUCCESS"));
             assertEquals(MAVEN_VERSION, executor.mavenVersion());
         }

@@ -35,7 +35,8 @@
   <description />
 
   <properties>
-    <version.toolbox>0.15.8</version.toolbox>
+    <javaVersion>8</javaVersion>
+    <version.toolbox>0.15.9</version.toolbox>
   </properties>
 
   <dependencies>
@@ -53,6 +54,25 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>compile-java17</id>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <phase>compile</phase>
+            <configuration>
+              <release>17</release>
+              <compileSourceRoots>
+                <compileSourceRoot>${project.basedir}/src/main/java17</compileSourceRoot>
+              </compileSourceRoots>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>

@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.apache.maven.executor.support.ToolboxExecutorTool;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,11 +47,16 @@ public class ToolboxExecutorToolTest {
 
     @BeforeEach
     void beforeEach(TestInfo testInfo) throws Exception {
-        String testName = testInfo.getTestMethod().orElseThrow().getName();
+        String testName = testInfo.getTestMethod()
+                .orElseThrow(() -> new NoSuchElementException("No such element"))
+                .getName();
         userHome = tempDir.resolve(testName);
         cwd = userHome.resolve("cwd");
         Files.createDirectories(cwd.resolve(".mvn"));
-        System.out.println("=== " + testInfo.getTestMethod().orElseThrow().getName());
+        System.out.println("=== "
+                + testInfo.getTestMethod()
+                        .orElseThrow(() -> new NoSuchElementException("No such element"))
+                        .getName());
     }
 
     private ExecutorRequest.Builder getExecutorRequest() {
@@ -65,11 +71,11 @@ public class ToolboxExecutorToolTest {
     }
 
     private Path mvn3Home() {
-        return Path.of(Environment.MAVEN3_HOME);
+        return Paths.get(Environment.MAVEN3_HOME);
     }
 
     private Path mvn4Home() {
-        return Path.of(Environment.MAVEN4_HOME);
+        return Paths.get(Environment.MAVEN4_HOME);
     }
 
     @ParameterizedTest

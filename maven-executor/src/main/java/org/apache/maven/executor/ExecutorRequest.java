@@ -22,8 +22,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,8 +96,15 @@ public interface ExecutorRequest {
     Optional<List<String>> jvmArguments();
 
     /**
+     * Whether execution outputs (STDOUT and STDERR) should be captured as plain {@link String}.
+     * By default, this is {@code true}, unless client manually sets any of {@link #stdOut()} or {@link #stdErr()}
+     * streams, in which case this value is set to {@code false} and caller must handle these streams manually.
+     */
+    boolean grabOutputAsString();
+
+    /**
      * Optional provider for STD in of the Maven. If given, this provider will be piped into std input of
-     * Maven.
+     * Maven. The stream is closed once tool execution is finished.
      *
      * @return an Optional containing the stdin provider, or empty if not specified.
      */
@@ -105,6 +114,7 @@ public interface ExecutorRequest {
      * Optional consumer for STD out of the Maven. If given, this consumer will get all output from the std out of
      * Maven. Note: whether consumer gets to consume anything depends on invocation arguments passed in
      * {@link #arguments()}, as if log file is set, not much will go to stdout.
+     * The stream is closed once tool execution is finished.
      *
      * @return an Optional containing the stdout consumer, or empty if not specified.
      */
@@ -114,6 +124,7 @@ public interface ExecutorRequest {
      * Optional consumer for STD err of the Maven. If given, this consumer will get all output from the std err of
      * Maven. Note: whether consumer gets to consume anything depends on invocation arguments passed in
      * {@link #arguments()}, as if log file is set, not much will go to stderr.
+     *  The stream is closed once tool execution is finished.
      *
      * @return an Optional containing the stderr consumer, or empty if not specified.
      */
@@ -127,6 +138,13 @@ public interface ExecutorRequest {
     boolean skipMavenRc();
 
     /**
+     * The optional execution time limit. If set, and execution does not finish within the given time, it is considered
+     * failed and killed. If not set, no time limit is applied. Depending on implementation, the timeout detection may
+     * be imprecise.
+     */
+    Optional<Duration> executionTimeout();
+
+    /**
      * Returns {@link Builder} created from this instance.
      */
     default Builder toBuilder() {
@@ -138,10 +156,12 @@ public interface ExecutorRequest {
                 jvmSystemProperties().orElse(null),
                 environmentVariables().orElse(null),
                 jvmArguments().orElse(null),
+                grabOutputAsString(),
                 stdIn().orElse(null),
                 stdOut().orElse(null),
                 stdErr().orElse(null),
-                skipMavenRc());
+                skipMavenRc(),
+                executionTimeout().orElse(null));
     }
 
     /**
@@ -157,10 +177,12 @@ public interface ExecutorRequest {
                 null,
                 null,
                 null,
+                true,
                 null,
                 null,
                 null,
-                false);
+                false,
+                null);
     }
 
     class Builder {
@@ -171,10 +193,12 @@ public interface ExecutorRequest {
         private Map<String, String> jvmSystemProperties;
         private Map<String, String> environmentVariables;
         private List<String> jvmArguments;
+        private boolean grabOutputAsString;
         private InputStream stdIn;
         private OutputStream stdOut;
         private OutputStream stdErr;
         private boolean skipMavenRc;
+        private Duration executionTimeout;
 
         private Builder() {}
 
@@ -187,10 +211,12 @@ public interface ExecutorRequest {
                 Map<String, String> jvmSystemProperties,
                 Map<String, String> environmentVariables,
                 List<String> jvmArguments,
+                boolean grabOutputAsString,
                 InputStream stdIn,
                 OutputStream stdOut,
                 OutputStream stdErr,
-                boolean skipMavenRc) {
+                boolean skipMavenRc,
+                Duration executionTimeout) {
             this.command = command;
             this.arguments = arguments;
             this.cwd = cwd;
@@ -198,10 +224,12 @@ public interface ExecutorRequest {
             this.jvmSystemProperties = jvmSystemProperties;
             this.environmentVariables = environmentVariables;
             this.jvmArguments = jvmArguments;
+            this.grabOutputAsString = grabOutputAsString;
             this.stdIn = stdIn;
             this.stdOut = stdOut;
             this.stdErr = stdErr;
             this.skipMavenRc = skipMavenRc;
+            this.executionTimeout = executionTimeout;
         }
 
         public Builder command(String command) {
@@ -279,23 +307,39 @@ public interface ExecutorRequest {
             return this;
         }
 
+        public Builder grabOutputAsString(boolean grabOutputAsString) {
+            this.grabOutputAsString = grabOutputAsString;
+            if (grabOutputAsString) {
+                this.stdOut = null;
+                this.stdErr = null;
+            }
+            return this;
+        }
+
         public Builder stdIn(InputStream stdIn) {
             this.stdIn = stdIn;
             return this;
         }
 
         public Builder stdOut(OutputStream stdOut) {
+            this.grabOutputAsString = false;
             this.stdOut = stdOut;
             return this;
         }
 
         public Builder stdErr(OutputStream stdErr) {
+            this.grabOutputAsString = false;
             this.stdErr = stdErr;
             return this;
         }
 
         public Builder skipMavenRc(boolean skipMavenRc) {
             this.skipMavenRc = skipMavenRc;
+            return this;
+        }
+
+        public Builder executionTimeout(Duration executionTimeout) {
+            this.executionTimeout = executionTimeout;
             return this;
         }
 
@@ -308,10 +352,12 @@ public interface ExecutorRequest {
                     jvmSystemProperties,
                     environmentVariables,
                     jvmArguments,
+                    grabOutputAsString,
                     stdIn,
                     stdOut,
                     stdErr,
-                    skipMavenRc);
+                    skipMavenRc,
+                    executionTimeout);
         }
 
         private static class Impl implements ExecutorRequest {
@@ -322,10 +368,12 @@ public interface ExecutorRequest {
             private final Map<String, String> jvmSystemProperties;
             private final Map<String, String> environmentVariables;
             private final List<String> jvmArguments;
+            private final boolean grabOutputAsString;
             private final InputStream stdIn;
             private final OutputStream stdOut;
             private final OutputStream stdErr;
             private final boolean skipMavenRc;
+            private final Duration executionTimeout;
 
             @SuppressWarnings("ParameterNumber")
             private Impl(
@@ -336,25 +384,33 @@ public interface ExecutorRequest {
                     Map<String, String> jvmSystemProperties,
                     Map<String, String> environmentVariables,
                     List<String> jvmArguments,
+                    boolean grabOutputAsString,
                     InputStream stdIn,
                     OutputStream stdOut,
                     OutputStream stdErr,
-                    boolean skipMavenRc) {
+                    boolean skipMavenRc,
+                    Duration executionTimeout) {
                 this.command = requireNonNull(command);
-                this.arguments = arguments == null ? List.of() : List.copyOf(arguments);
+                this.arguments = arguments == null
+                        ? Collections.emptyList()
+                        : Collections.unmodifiableList(new ArrayList<>(arguments));
                 this.cwd = getCanonicalPath(requireNonNull(cwd));
                 this.userHomeDirectory = getCanonicalPath(requireNonNull(userHomeDirectory));
                 this.jvmSystemProperties = jvmSystemProperties != null && !jvmSystemProperties.isEmpty()
-                        ? Map.copyOf(jvmSystemProperties)
+                        ? Collections.unmodifiableMap(new HashMap<>(jvmSystemProperties))
                         : null;
                 this.environmentVariables = environmentVariables != null && !environmentVariables.isEmpty()
-                        ? Map.copyOf(environmentVariables)
+                        ? Collections.unmodifiableMap(new HashMap<>(environmentVariables))
                         : null;
-                this.jvmArguments = jvmArguments != null && !jvmArguments.isEmpty() ? List.copyOf(jvmArguments) : null;
+                this.jvmArguments = jvmArguments != null && !jvmArguments.isEmpty()
+                        ? Collections.unmodifiableList(new ArrayList<>(jvmArguments))
+                        : null;
+                this.grabOutputAsString = grabOutputAsString;
                 this.stdIn = stdIn;
                 this.stdOut = stdOut;
                 this.stdErr = stdErr;
                 this.skipMavenRc = skipMavenRc;
+                this.executionTimeout = executionTimeout;
             }
 
             @Override
@@ -393,6 +449,11 @@ public interface ExecutorRequest {
             }
 
             @Override
+            public boolean grabOutputAsString() {
+                return grabOutputAsString;
+            }
+
+            @Override
             public Optional<InputStream> stdIn() {
                 return Optional.ofNullable(stdIn);
             }
@@ -413,19 +474,26 @@ public interface ExecutorRequest {
             }
 
             @Override
+            public Optional<Duration> executionTimeout() {
+                return Optional.ofNullable(executionTimeout);
+            }
+
+            @Override
             public String toString() {
-                return getClass().getSimpleName() + "{" + "command='"
+                return "Impl{" + "command='"
                         + command + '\'' + ", arguments="
                         + arguments + ", cwd="
-                        + cwd + ", installationDirectory="
+                        + cwd + ", userHomeDirectory="
                         + userHomeDirectory + ", jvmSystemProperties="
                         + jvmSystemProperties + ", environmentVariables="
                         + environmentVariables + ", jvmArguments="
-                        + jvmArguments + ", stdinProvider="
-                        + stdIn + ", stdoutConsumer="
-                        + stdOut + ", stderrConsumer="
+                        + jvmArguments + ", grabOutputAsString="
+                        + grabOutputAsString + ", stdIn="
+                        + stdIn + ", stdOut="
+                        + stdOut + ", stdErr="
                         + stdErr + ", skipMavenRc="
-                        + skipMavenRc + "}";
+                        + skipMavenRc + ", executionTimeout="
+                        + executionTimeout + '}';
             }
         }
     }

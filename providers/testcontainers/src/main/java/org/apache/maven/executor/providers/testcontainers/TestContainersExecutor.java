@@ -19,7 +19,6 @@
 package org.apache.maven.executor.providers.testcontainers;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
@@ -35,6 +34,8 @@ import com.github.dockerjava.api.DockerClient;
 import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorRequest;
+import org.apache.maven.executor.ExecutorResult;
+import org.apache.maven.executor.support.SimpleExecutionResult;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
@@ -81,7 +82,7 @@ public class TestContainersExecutor implements Executor {
      * Note: Testcontainers uses Lombok {@code @Sneakythrows}.
      */
     @Override
-    public int execute(ExecutorRequest request) throws ExecutorException {
+    public ExecutorResult execute(ExecutorRequest request) throws ExecutorException {
         requireNonNull(request);
 
         HashMap<String, String> env = new HashMap<>();
@@ -108,13 +109,25 @@ public class TestContainersExecutor implements Executor {
                     .start();
 
             try {
-                new ByteArrayInputStream(
-                                container.getLogs(OutputFrame.OutputType.STDOUT).getBytes(StandardCharsets.UTF_8))
-                        .transferTo(request.stdOut().orElse(OutputStream.nullOutputStream()));
-                new ByteArrayInputStream(
-                                container.getLogs(OutputFrame.OutputType.STDERR).getBytes(StandardCharsets.UTF_8))
-                        .transferTo(request.stdErr().orElse(OutputStream.nullOutputStream()));
-                return startupCheckStrategy.lastStatus.get() == StartupCheckStrategy.StartupStatus.SUCCESSFUL ? 0 : 1;
+                boolean success =
+                        startupCheckStrategy.lastStatus.get() == StartupCheckStrategy.StartupStatus.SUCCESSFUL;
+                int exitCode = success ? 0 : 1;
+                String out = null;
+                String err = null;
+                if (request.grabOutputAsString()) {
+                    out = container.getLogs(OutputFrame.OutputType.STDOUT);
+                    err = container.getLogs(OutputFrame.OutputType.STDERR);
+                } else {
+                    new ByteArrayInputStream(container
+                                    .getLogs(OutputFrame.OutputType.STDOUT)
+                                    .getBytes(StandardCharsets.UTF_8))
+                            .transferTo(request.stdOut().orElse(OutputStream.nullOutputStream()));
+                    new ByteArrayInputStream(container
+                                    .getLogs(OutputFrame.OutputType.STDERR)
+                                    .getBytes(StandardCharsets.UTF_8))
+                            .transferTo(request.stdErr().orElse(OutputStream.nullOutputStream()));
+                }
+                return new SimpleExecutionResult(request, success, exitCode, out, err);
             } catch (IOException e) {
                 throw new ExecutorException(e);
             }
@@ -124,20 +137,18 @@ public class TestContainersExecutor implements Executor {
     @Override
     public String mavenVersion() throws ExecutorException {
         return cache.computeIfAbsent("maven.version", k -> {
-            ByteArrayOutputStream stdOut = new ByteArrayOutputStream();
-            ByteArrayOutputStream stdErr = new ByteArrayOutputStream();
-            int exitCode = execute(ExecutorRequest.mavenBuilder()
+            ExecutorResult result = execute(ExecutorRequest.mavenBuilder()
                     .userHomeDirectory(ExecutorRequest.discoverUserHomeDirectory())
                     .command(ExecutorRequest.MVN)
                     .arguments("-q", "-v")
-                    .stdOut(stdOut)
-                    .stdErr(stdErr)
                     .build());
+            int exitCode = result.exitCode().orElseThrow();
             if (exitCode == 0) {
-                return stdOut.toString().trim();
+                return result.stdOutString().orElseThrow().trim();
             } else {
-                throw new ExecutorException(
-                        "Unexpected exit code: " + exitCode + "; stdout = " + stdOut + "; stderr = " + stdErr);
+                throw new ExecutorException("Unexpected exit code: " + exitCode + "; stdout = "
+                        + result.stdOutString().orElse("").trim() + "; stderr = "
+                        + result.stdErrString().orElse("").trim());
             }
         });
     }
