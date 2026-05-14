@@ -101,19 +101,19 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
 
     protected ExecutorResult doExecute(ExecutorRequest executorRequest) throws ExecutorException {
         ArrayList<String> cmdAndArguments = new ArrayList<>();
-        cmdAndArguments.add(mayQuoteAndEscape(installationDirectory
+        cmdAndArguments.add(installationDirectory
                 .resolve("bin")
                 .resolve(IS_WINDOWS ? executorRequest.command() + ".cmd" : executorRequest.command())
-                .toString()));
+                .toString());
 
         String mavenArgsEnv = System.getenv("MAVEN_ARGS");
         if (useMavenArgsEnv && mavenArgsEnv != null && !mavenArgsEnv.isEmpty()) {
             Arrays.stream(mavenArgsEnv.split(" "))
                     .filter(s -> !s.trim().isEmpty())
-                    .forEach(a -> cmdAndArguments.add(mayQuoteAndEscape(a)));
+                    .forEach(cmdAndArguments::add);
         }
 
-        executorRequest.arguments().forEach(a -> cmdAndArguments.add(mayQuoteAndEscape(a)));
+        cmdAndArguments.addAll(executorRequest.arguments());
 
         ArrayList<String> jvmArgs = new ArrayList<>();
         if (!executorRequest.userHomeDirectory().equals(getCanonicalPath(Paths.get(System.getProperty("user.home"))))) {
