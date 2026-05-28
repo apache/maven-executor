@@ -18,6 +18,7 @@
  */
 package org.apache.maven.executor.embedded;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,6 +49,8 @@ import java.util.stream.Stream;
 import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorRequest;
+import org.apache.maven.executor.ExecutorResult;
+import org.apache.maven.executor.support.SimpleExecutionResult;
 
 import static java.util.Objects.requireNonNull;
 
@@ -60,13 +63,15 @@ public class EmbeddedMavenExecutor implements Executor {
     /**
      * Maven4 supports multiple commands from same installation directory.
      */
-    protected static final Map<String, String> MVN4_MAIN_CLASSES = Map.of(
-            "mvn",
-            "org.apache.maven.cling.MavenCling",
-            "mvnenc",
-            "org.apache.maven.cling.MavenEncCling",
-            "mvnsh",
-            "org.apache.maven.cling.MavenShellCling");
+    protected static final Map<String, String> MVN4_MAIN_CLASSES;
+
+    static {
+        Map<String, String> mvn4MavenClasses = new HashMap<>();
+        mvn4MavenClasses.put("mvn", "org.apache.maven.cling.MavenCling");
+        mvn4MavenClasses.put("mvnenc", "org.apache.maven.cling.MavenEncCling");
+        mvn4MavenClasses.put("mvnsh", "org.apache.maven.cling.MavenShellCling");
+        MVN4_MAIN_CLASSES = Collections.unmodifiableMap(mvn4MavenClasses);
+    }
 
     /**
      * Context holds things loaded up from given Maven Installation Directory.
@@ -77,7 +82,7 @@ public class EmbeddedMavenExecutor implements Executor {
         private final Object classWorld;
         private final Set<String> originalClassRealmIds;
         private final ClassLoader tccl;
-        private final Map<String, Function<ExecutorRequest, Integer>> commands; // the commands
+        private final Map<String, Function<ExecutorRequest, ExecutorResult>> commands; // the commands
         private final Collection<Object> keepAlive; // refs things to make sure no GC takes it away
 
         protected Context(
@@ -86,7 +91,7 @@ public class EmbeddedMavenExecutor implements Executor {
                 Object classWorld,
                 Set<String> originalClassRealmIds,
                 ClassLoader tccl,
-                Map<String, Function<ExecutorRequest, Integer>> commands,
+                Map<String, Function<ExecutorRequest, ExecutorResult>> commands,
                 Collection<Object> keepAlive) {
             this.bootClassLoader = bootClassLoader;
             this.version = version;
@@ -126,7 +131,7 @@ public class EmbeddedMavenExecutor implements Executor {
     }
 
     @Override
-    public int execute(ExecutorRequest executorRequest) throws ExecutorException {
+    public ExecutorResult execute(ExecutorRequest executorRequest) throws ExecutorException {
         requireNonNull(executorRequest);
         if (closed.get()) {
             throw new ExecutorException("Executor is closed");
@@ -135,7 +140,7 @@ public class EmbeddedMavenExecutor implements Executor {
         String command = executorRequest.command();
         Context context = contextMap.computeIfAbsent(
                 installationDirectory, k -> doCreate(installationDirectory, executorRequest));
-        Function<ExecutorRequest, Integer> exec = context.commands.get(command);
+        Function<ExecutorRequest, ExecutorResult> exec = context.commands.get(command);
         if (exec == null) {
             throw new IllegalArgumentException(
                     "Unknown command: '" + command + "' for '" + installationDirectory + "'");
@@ -193,6 +198,7 @@ public class EmbeddedMavenExecutor implements Executor {
         }
     }
 
+    @SuppressWarnings("checkstyle:MethodLength")
     protected Context doCreate(Path mavenHome, ExecutorRequest executorRequest) {
         if (!Files.isDirectory(mavenHome)) {
             throw new IllegalArgumentException("Installation directory must point to existing directory: " + mavenHome);
@@ -252,7 +258,7 @@ public class EmbeddedMavenExecutor implements Executor {
             Class<?> cliClass =
                     (Class<?>) launcherClass.getMethod("getMainClass").invoke(launcher);
             String version = getMavenVersion(cliClass);
-            Map<String, Function<ExecutorRequest, Integer>> commands = new HashMap<>();
+            Map<String, Function<ExecutorRequest, ExecutorResult>> commands = new HashMap<>();
             ArrayList<Object> keepAlive = new ArrayList<>();
 
             if (version.startsWith("3.")) {
@@ -271,19 +277,29 @@ public class EmbeddedMavenExecutor implements Executor {
                 Class<?>[] parameterTypes = {String[].class, String.class, PrintStream.class, PrintStream.class};
                 Method doMain = cliClass.getMethod("doMain", parameterTypes);
                 commands.put(ExecutorRequest.MVN, r -> {
+                    OutputStream out;
+                    OutputStream err;
+                    if (r.grabOutputAsString()) {
+                        out = new ByteArrayOutputStream();
+                        err = new ByteArrayOutputStream();
+                    } else {
+                        out = r.stdOut().orElse(null);
+                        err = r.stdErr().orElse(null);
+                    }
                     System.setProperties(prepareProperties(r));
                     try {
                         ArrayList<String> args = new ArrayList<>(mavenArgs);
                         args.addAll(r.arguments());
-                        PrintStream stdout = r.stdOut().isEmpty()
-                                ? null
-                                : new PrintStream(r.stdOut().orElseThrow(), true);
-                        PrintStream stderr = r.stdErr().isEmpty()
-                                ? null
-                                : new PrintStream(r.stdErr().orElseThrow(), true);
-                        return (int) doMain.invoke(mavenCli, new Object[] {
+                        PrintStream stdout = out == null ? null : new PrintStream(out, true);
+                        PrintStream stderr = err == null ? null : new PrintStream(err, true);
+                        int exitCode = (int) doMain.invoke(mavenCli, new Object[] {
                             args.toArray(new String[0]), r.cwd().toString(), stdout, stderr
                         });
+                        if (r.grabOutputAsString()) {
+                            return new SimpleExecutionResult(r, exitCode == 0, exitCode, toString(out), toString(err));
+                        } else {
+                            return new SimpleExecutionResult(r, exitCode == 0, exitCode, null, null);
+                        }
                     } catch (Exception e) {
                         throw new ExecutorException("Failed to execute", e);
                     }
@@ -301,17 +317,28 @@ public class EmbeddedMavenExecutor implements Executor {
                             OutputStream.class,
                             OutputStream.class);
                     commands.put(cmdEntry.getKey(), r -> {
+                        InputStream in = r.stdIn().orElse(null);
+                        OutputStream out;
+                        OutputStream err;
+                        if (r.grabOutputAsString()) {
+                            out = new ByteArrayOutputStream();
+                            err = new ByteArrayOutputStream();
+                        } else {
+                            out = r.stdOut().orElse(null);
+                            err = r.stdErr().orElse(null);
+                        }
                         System.setProperties(prepareProperties(r));
                         try {
                             ArrayList<String> args = new ArrayList<>(mavenArgs);
                             args.addAll(r.arguments());
-                            return (int) mainMethod.invoke(
-                                    null,
-                                    args.toArray(new String[0]),
-                                    classWorld,
-                                    r.stdIn().orElse(null),
-                                    r.stdOut().orElse(null),
-                                    r.stdErr().orElse(null));
+                            int exitCode = (int)
+                                    mainMethod.invoke(null, args.toArray(new String[0]), classWorld, in, out, err);
+                            if (r.grabOutputAsString()) {
+                                return new SimpleExecutionResult(
+                                        r, exitCode == 0, exitCode, toString(out), toString(err));
+                            } else {
+                                return new SimpleExecutionResult(r, exitCode == 0, exitCode, null, null);
+                            }
                         } catch (Exception e) {
                             throw new ExecutorException("Failed to execute", e);
                         }
@@ -332,6 +359,14 @@ public class EmbeddedMavenExecutor implements Executor {
         } finally {
             Thread.currentThread().setContextClassLoader(originalClassLoader);
             System.setProperties(originalProperties);
+        }
+    }
+
+    private String toString(OutputStream outputStream) {
+        if (outputStream instanceof ByteArrayOutputStream) {
+            return outputStream.toString();
+        } else {
+            return null;
         }
     }
 
@@ -375,7 +410,7 @@ public class EmbeddedMavenExecutor implements Executor {
 
     @Override
     public void close() throws ExecutorException {
-        if (closed.compareAndExchange(false, true)) {
+        if (closed.compareAndSet(false, true)) {
             try {
                 Context context = contextMap.get(installationDirectory);
                 if (context != null) {

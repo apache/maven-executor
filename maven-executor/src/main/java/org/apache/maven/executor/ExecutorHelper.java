@@ -84,12 +84,12 @@ public interface ExecutorHelper extends Executor {
     /**
      * Executes the request with preferred mode executor.
      */
-    default int execute(ExecutorRequest executorRequest) throws ExecutorException {
+    default ExecutorResult execute(ExecutorRequest executorRequest) throws ExecutorException {
         return execute(getDefaultMode(), executorRequest);
     }
 
     /**
      * Executes the request with passed in mode executor.
      */
-    int execute(Mode mode, ExecutorRequest executorRequest) throws ExecutorException;
+    ExecutorResult execute(Mode mode, ExecutorRequest executorRequest) throws ExecutorException;
 }

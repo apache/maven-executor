@@ -38,10 +38,10 @@ public interface Executor extends AutoCloseable {
      * process based on the information contained in the request.
      *
      * @param executorRequest the request containing all necessary information for the execution
-     * @return an integer representing the exit code of the execution (0 typically indicates success)
+     * @return ExecutorResult carrying the result of the execution
      * @throws ExecutorException if an error occurs during the execution process
      */
-    int execute(ExecutorRequest executorRequest) throws ExecutorException;
+    ExecutorResult execute(ExecutorRequest executorRequest) throws ExecutorException;
 
     /**
      * Returns the Maven version that this executor points at (would use). This operation, depending on the underlying

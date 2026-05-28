@@ -21,9 +21,6 @@ package org.apache.maven.executor.batch;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -32,11 +29,13 @@ import java.util.Optional;
 import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorRequest;
+import org.apache.maven.executor.ExecutorResult;
 import org.apache.maven.executor.batch.steps.ContextStep;
 import org.apache.maven.executor.batch.steps.Environment;
 import org.apache.maven.executor.batch.steps.ExecuteStep;
 import org.apache.maven.executor.batch.steps.Execution;
 import org.apache.maven.executor.batch.steps.Step;
+import org.apache.maven.executor.support.SimpleExecutionResult;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,16 +47,8 @@ public class BatchExecutorTest {
     void smoke() {
         Executor executor = new Executor() {
             @Override
-            public int execute(ExecutorRequest executorRequest) throws ExecutorException {
-                try {
-                    executorRequest
-                            .stdOut()
-                            .orElse(OutputStream.nullOutputStream())
-                            .write("Executed!".getBytes(StandardCharsets.UTF_8));
-                    return 0;
-                } catch (IOException e) {
-                    throw new ExecutorException(e);
-                }
+            public ExecutorResult execute(ExecutorRequest executorRequest) throws ExecutorException {
+                return new SimpleExecutionResult(executorRequest, true, 0, "Executed", null);
             }
 
             @Override

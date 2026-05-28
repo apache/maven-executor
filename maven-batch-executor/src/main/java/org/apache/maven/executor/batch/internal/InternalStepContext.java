@@ -18,7 +18,6 @@
  */
 package org.apache.maven.executor.batch.internal;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorRequest;
+import org.apache.maven.executor.ExecutorResult;
 import org.apache.maven.executor.ExecutorTool;
 import org.apache.maven.executor.batch.steps.Environment;
 import org.apache.maven.executor.batch.steps.Execution;
@@ -97,24 +97,22 @@ public class InternalStepContext implements StepContext {
         execution.environmentVariables().ifPresent(ev -> ev.forEach(builder::environmentVariable));
         execution.jvmSystemProperties().ifPresent(sp -> sp.forEach(builder::jvmSystemProperty));
         execution.jvmArguments().ifPresent(ja -> ja.forEach(builder::jvmArgument));
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
 
-        int exitCode = executor.execute(builder.stdOut(out).stdErr(err).build());
+        ExecutorResult res = executor.execute(builder.build());
         Execution.Result result = new Execution.Result() {
             @Override
             public int exitCode() {
-                return exitCode;
+                return res.exitCode().orElseThrow();
             }
 
             @Override
             public String stdOut() {
-                return out.toString();
+                return res.stdOutString().orElseThrow();
             }
 
             @Override
             public String stdErr() {
-                return err.toString();
+                return res.stdErrString().orElseThrow();
             }
         };
         resultList.add(result);

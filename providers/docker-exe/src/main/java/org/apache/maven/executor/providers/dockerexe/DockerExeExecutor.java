@@ -18,7 +18,6 @@
  */
 package org.apache.maven.executor.providers.dockerexe;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorRequest;
+import org.apache.maven.executor.ExecutorResult;
 import org.apache.maven.executor.support.ProcessBuilderExecutorSupport;
 
 import static java.util.Objects.requireNonNull;
@@ -69,7 +69,7 @@ public class DockerExeExecutor extends ProcessBuilderExecutorSupport implements 
     }
 
     @Override
-    public int execute(ExecutorRequest request) throws ExecutorException {
+    public ExecutorResult execute(ExecutorRequest request) throws ExecutorException {
         requireNonNull(request);
 
         try {
@@ -112,20 +112,18 @@ public class DockerExeExecutor extends ProcessBuilderExecutorSupport implements 
     @Override
     public String mavenVersion() throws ExecutorException {
         return cache.computeIfAbsent("maven.version", k -> {
-            ByteArrayOutputStream stdOut = new ByteArrayOutputStream();
-            ByteArrayOutputStream stdErr = new ByteArrayOutputStream();
-            int exitCode = execute(ExecutorRequest.mavenBuilder()
+            ExecutorResult result = execute(ExecutorRequest.mavenBuilder()
                     .userHomeDirectory(ExecutorRequest.discoverUserHomeDirectory())
                     .command(ExecutorRequest.MVN)
                     .arguments("-q", "-v")
-                    .stdOut(stdOut)
-                    .stdErr(stdErr)
                     .build());
+            int exitCode = result.exitCode().orElseThrow();
             if (exitCode == 0) {
-                return stdOut.toString().trim();
+                return result.stdOutString().orElse("").trim();
             } else {
-                throw new ExecutorException(
-                        "Unexpected exit code: " + exitCode + "; stdout = " + stdOut + "; stderr = " + stdErr);
+                throw new ExecutorException("Unexpected exit code: " + exitCode + "; stdout = "
+                        + result.stdOutString().orElse("").trim() + "; stderr = "
+                        + result.stdErrString().orElse("").trim());
             }
         });
     }
