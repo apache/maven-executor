@@ -23,11 +23,12 @@
   <parent>
     <groupId>org.apache.maven</groupId>
     <artifactId>maven-parent</artifactId>
-    <version>47</version>
+    <version>48</version>
     <relativePath />
   </parent>
-  <groupId>org.apache.maven</groupId>
-  <artifactId>maven-executor</artifactId>
+
+  <groupId>org.apache.maven.executor</groupId>
+  <artifactId>executor</artifactId>
   <version>2.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
@@ -71,11 +72,11 @@
     <project.build.outputTimestamp>2026-04-30T20:09:29Z</project.build.outputTimestamp>
     <testTmpDir>${project.build.directory}/tmp</testTmpDir>
 
-    <version.maven3>3.9.15</version.maven3>
+    <version.maven3>3.9.16</version.maven3>
     <version.maven3resolver>1.9.27</version.maven3resolver>
     <version.maven4>4.0.0-rc-5</version.maven4>
-
-    <version.slf4j>2.0.17</version.slf4j>
+    <version.slf4j>2.0.18</version.slf4j>
+    <versions.junit5>6.0.3</versions.junit5>
     <versions.junit5>5.14.4</versions.junit5>
     <version.mockito>5.23.0</version.mockito>
   </properties>
@@ -193,7 +194,7 @@
       <dependency>
         <groupId>org.apache.groovy</groupId>
         <artifactId>groovy-jsr223</artifactId>
-        <version>5.0.5</version>
+        <version>5.0.6</version>
       </dependency>
 
       <!-- test dependencies -->
