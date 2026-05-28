@@ -27,5 +27,6 @@ jobs:
     uses: apache/maven-gh-actions-shared/.github/workflows/maven-verify.yml@v4
     with:
       ff-jdk-toolchain: "" # unused
+      jdk-toolchain: "" # unused
       jdk-matrix: '[ "17", "21", "26" ]'
       maven4-enabled: true
