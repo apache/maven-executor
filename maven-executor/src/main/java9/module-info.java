@@ -22,4 +22,6 @@ module org.apache.maven.executor {
     exports org.apache.maven.executor.forked;
     exports org.apache.maven.executor.embedded;
     exports org.apache.maven.executor.support;
+
+    provides java.util.spi.ToolProvider with org.apache.maven.executor.tool.MavenToolProvider;
 }

@@ -64,6 +64,7 @@
             </goals>
             <phase>compile</phase>
             <configuration>
+              <multiReleaseOutput>true</multiReleaseOutput>
               <release>9</release>
               <compileSourceRoots>
                 <compileSourceRoot>${project.basedir}/src/main/java9</compileSourceRoot>
