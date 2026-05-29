@@ -302,5 +302,9 @@
         </plugins>
       </reporting>
     </profile>
+    <profile>
+      <!-- fluke profile to not fail with Maven 4 on CI -->
+      <id>run-its</id>
+    </profile>
   </profiles>
 </project>
