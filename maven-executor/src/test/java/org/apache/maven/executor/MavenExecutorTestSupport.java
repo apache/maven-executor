@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
@@ -298,6 +299,45 @@ public abstract class MavenExecutorTestSupport {
         System.out.println(stdout);
         assertFalse(stdout.toString().contains("[\u001B["), "No ANSI codes present");
         assertTrue(stdout.toString().contains("INFO"), "No INFO found");
+    }
+
+    @Test
+    void fs3WithDollar() throws Exception {
+        layDownFiles(cwd);
+        ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+        execute(
+                Paths.get(Environment.MAVEN3_HOME),
+                null,
+                Collections.singletonList(customizedRequest()
+                        .cwd(cwd)
+                        .argument("-V")
+                        .argument("help:evaluate")
+                        .argument("-Dexpression=foo")
+                        .argument("-Dfoo=some-${bar}")
+                        .stdOut(stdout)
+                        .build()));
+        System.out.println(stdout);
+        assertTrue(stdout.toString().contains("some-null"));
+    }
+
+    @Disabled("mvn4 has a bug https://github.com/apache/maven/issues/10421 that prevents this test from passing")
+    @Test
+    void fs4WithDollar() throws Exception {
+        layDownFiles(cwd);
+        ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+        execute(
+                Paths.get(Environment.MAVEN3_HOME),
+                null,
+                Collections.singletonList(customizedRequest()
+                        .cwd(cwd)
+                        .argument("-V")
+                        .argument("help:evaluate")
+                        .argument("-Dexpression=foo")
+                        .argument("-Dfoo=${bar}")
+                        .stdOut(stdout)
+                        .build()));
+        System.out.println(stdout);
+        assertTrue(stdout.toString().contains("some-null"));
     }
 
     public static final String POM_STRING = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"

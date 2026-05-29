@@ -117,17 +117,6 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
         }
     }
 
-    protected String mayQuoteAndEscape(String command) {
-        if (command.contains(" ")) {
-            if (command.contains("\"")) {
-                return "\"" + command.replace("\"", "\\\"") + "\"";
-            } else {
-                return "\"" + command + "\"";
-            }
-        }
-        return command;
-    }
-
     protected CountDownLatch pump(Process p, InputStream stdIn, OutputStream stdOut, OutputStream stdErr) {
         CountDownLatch latch = new CountDownLatch(3);
         String suffix = "-pump-" + ThreadLocalRandom.current().nextInt();

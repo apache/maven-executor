@@ -146,19 +146,8 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
             env.put("MAVEN_SKIP_RC", "true");
         }
 
-        // Adjust the process invocation to circumvent possible limited buffers
-        ArrayList<String> command = new ArrayList<>();
-        if (IS_WINDOWS) {
-            command.add("cmd.exe");
-            command.add("/c");
-        } else {
-            command.add("sh");
-            command.add("-c");
-        }
-        command.add(cmdAndArguments.stream().map(this::mayQuoteAndEscape).collect(Collectors.joining(" ")));
-
         ProcessBuilder pb =
-                new ProcessBuilder().directory(executorRequest.cwd().toFile()).command(command);
+                new ProcessBuilder().directory(executorRequest.cwd().toFile()).command(cmdAndArguments);
         if (!env.isEmpty()) {
             pb.environment().putAll(env);
         }
