@@ -20,6 +20,7 @@ package org.apache.maven.executor.providers.testcontainers;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.apache.maven.executor.ExecutorRequest;
 import org.apache.maven.executor.ExecutorResult;
@@ -40,7 +41,7 @@ public class TestContainersExecutorTest {
 
     @Test
     void smoke() throws Exception {
-        Path cwd = Path.of("target/test-classes/simple-project");
+        Path cwd = Paths.get("target/test-classes/simple-project");
         TestProjects.createSimpleProject(cwd);
         ByteArrayOutputStream stdOut = new ByteArrayOutputStream();
         ExecutorRequest request = ExecutorRequest.mavenBuilder()

@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.maven.executor.Executor;
@@ -117,7 +118,7 @@ public class DockerExeExecutor extends ProcessBuilderExecutorSupport implements 
                     .command(ExecutorRequest.MVN)
                     .arguments("-q", "-v")
                     .build());
-            int exitCode = result.exitCode().orElseThrow();
+            int exitCode = result.exitCode().orElseThrow(() -> new NoSuchElementException("no exitCode provided"));
             if (exitCode == 0) {
                 return result.stdOutString().orElse("").trim();
             } else {

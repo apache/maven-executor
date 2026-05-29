@@ -29,7 +29,7 @@
 
   <groupId>org.apache.maven.executor</groupId>
   <artifactId>executor</artifactId>
-  <version>2.0.0-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Apache Maven Executor</name>
@@ -40,9 +40,7 @@
   <modules>
     <module>test-utilities</module>
     <module>maven-executor</module>
-    <module>maven-batch-executor</module>
     <module>providers</module>
-    <module>maven-executor-plugin</module>
   </modules>
 
   <scm>
@@ -67,7 +65,7 @@
   </distributionManagement>
 
   <properties>
-    <javaVersion>17</javaVersion>
+    <javaVersion>8</javaVersion>
     <maven.site.path>executor-archives/executor-LATEST</maven.site.path>
     <project.build.outputTimestamp>2026-04-30T20:09:29Z</project.build.outputTimestamp>
     <testTmpDir>${project.build.directory}/tmp</testTmpDir>
@@ -221,6 +219,26 @@
   <build>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>compile-java9</id>
+              <goals>
+                <goal>compile</goal>
+              </goals>
+              <phase>compile</phase>
+              <configuration>
+                <multiReleaseOutput>true</multiReleaseOutput>
+                <release>9</release>
+                <compileSourceRoots>
+                  <compileSourceRoot>${project.basedir}/src/main/java9</compileSourceRoot>
+                </compileSourceRoots>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>

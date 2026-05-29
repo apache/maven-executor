@@ -20,13 +20,13 @@ package org.apache.maven.executor.providers.testcontainers;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,6 +35,7 @@ import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorRequest;
 import org.apache.maven.executor.ExecutorResult;
+import org.apache.maven.executor.support.IOTools;
 import org.apache.maven.executor.support.SimpleExecutionResult;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
@@ -118,14 +119,16 @@ public class TestContainersExecutor implements Executor {
                     out = container.getLogs(OutputFrame.OutputType.STDOUT);
                     err = container.getLogs(OutputFrame.OutputType.STDERR);
                 } else {
-                    new ByteArrayInputStream(container
+                    IOTools.transferTo(
+                            new ByteArrayInputStream(container
                                     .getLogs(OutputFrame.OutputType.STDOUT)
-                                    .getBytes(StandardCharsets.UTF_8))
-                            .transferTo(request.stdOut().orElse(OutputStream.nullOutputStream()));
-                    new ByteArrayInputStream(container
+                                    .getBytes(StandardCharsets.UTF_8)),
+                            request.stdOut().orElse(IOTools.nullOutputStream()));
+                    IOTools.transferTo(
+                            new ByteArrayInputStream(container
                                     .getLogs(OutputFrame.OutputType.STDERR)
-                                    .getBytes(StandardCharsets.UTF_8))
-                            .transferTo(request.stdErr().orElse(OutputStream.nullOutputStream()));
+                                    .getBytes(StandardCharsets.UTF_8)),
+                            request.stdErr().orElse(IOTools.nullOutputStream()));
                 }
                 return new SimpleExecutionResult(request, success, exitCode, out, err);
             } catch (IOException e) {
@@ -142,9 +145,11 @@ public class TestContainersExecutor implements Executor {
                     .command(ExecutorRequest.MVN)
                     .arguments("-q", "-v")
                     .build());
-            int exitCode = result.exitCode().orElseThrow();
+            int exitCode = result.exitCode().orElseThrow(() -> new NoSuchElementException("no exitCode provided"));
             if (exitCode == 0) {
-                return result.stdOutString().orElseThrow().trim();
+                return result.stdOutString()
+                        .orElseThrow(() -> new NoSuchElementException("no stdOut provided"))
+                        .trim();
             } else {
                 throw new ExecutorException("Unexpected exit code: " + exitCode + "; stdout = "
                         + result.stdOutString().orElse("").trim() + "; stderr = "
