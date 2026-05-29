@@ -132,21 +132,30 @@ public class MavenToolProvider implements ToolProvider {
         }
     }
 
+    /**
+     * Looks in list for arguments that start with {@code MEX_PREFIX + name}, first found is removed from {@code allArguments}
+     * and used as result. If found, all {@code allArguments} list elements that start with {@code MEX_PREFIX + name} are
+     * removed as well, and found result is returned. If not found, empty {@link Optional} is returned.
+     */
     private Optional<String> extractMTPSingleArgument(List<String> allArguments, String name) {
-        String key = "-MEX-" + name;
+        String key = MEX_PREFIX + name;
         Optional<String> mtpArgument = allArguments.stream().filter(a -> a.startsWith(key)).findFirst();
         if (mtpArgument.isPresent()) {
             String argument = mtpArgument.get();
-            while (allArguments.remove(argument)) {
-                // all occurrences removed; first wins
-            }
+            allArguments.removeIf(s -> s.equals(argument));
             return Optional.of(argument.substring(key.length() + 1));
         }
         return Optional.empty();
     }
 
+    /**
+     * Looks in list for arguments that start with {@code MEX_PREFIX + name}, any found is removed from {@code allArguments}
+     * and added to result map, where key is substring between {@code MEX_PREFIX + name} and {@code =}, and value is
+     * substring after {@code =}, or null if there is no {@code =}.
+     * Method never returns empty map, rather empty {@link Optional}.
+     */
     private Optional<Map<String, String>> extractMTPMapArgument(List<String> allArguments, String name) {
-        String key = "-MEX-" + name;
+        String key = MEX_PREFIX + name;
         Map<String, String> result = new HashMap<>();
         Iterator<String> li = allArguments.listIterator();
         while (li.hasNext()) {
