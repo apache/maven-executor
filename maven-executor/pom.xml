@@ -35,7 +35,6 @@
 
   <properties>
     <javaVersion>8</javaVersion>
-    <version.toolbox>0.15.9</version.toolbox>
   </properties>
 
   <dependencies>
