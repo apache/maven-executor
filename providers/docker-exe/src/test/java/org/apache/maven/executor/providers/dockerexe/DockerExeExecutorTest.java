@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisabledOnOs({OS.WINDOWS, OS.MAC})
 public class DockerExeExecutorTest {
-    private static final String MAVEN_VERSION = "3.9.15";
+    private static final String MAVEN_VERSION = "3.9.16";
 
     @Test
     void smoke() throws Exception {
