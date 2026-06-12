@@ -29,7 +29,7 @@
 
   <groupId>org.apache.maven.executor</groupId>
   <artifactId>executor</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0</version>
   <packaging>pom</packaging>
 
   <name>Apache Maven Executor</name>
@@ -46,7 +46,7 @@
   <scm>
     <connection>scm:git:https://gitbox.apache.org/repos/asf/maven-executor.git</connection>
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/maven-executor.git</developerConnection>
-    <tag>main</tag>
+    <tag>executor-1.0.0</tag>
     <url>https://github.com/apache/maven-executor/tree/${project.scm.tag}</url>
   </scm>
   <issueManagement>
@@ -67,7 +67,7 @@
   <properties>
     <javaVersion>8</javaVersion>
     <maven.site.path>executor-archives/executor-LATEST</maven.site.path>
-    <project.build.outputTimestamp>2026-04-30T20:09:29Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-06-12T10:13:22Z</project.build.outputTimestamp>
     <testTmpDir>${project.build.directory}/tmp</testTmpDir>
 
     <version.maven3>3.9.16</version.maven3>
