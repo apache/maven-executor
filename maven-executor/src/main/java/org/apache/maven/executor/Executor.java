@@ -21,7 +21,7 @@ package org.apache.maven.executor;
 /**
  * Defines the contract for a component responsible for executing a Maven tool
  * using the information provided in an {@link ExecutorRequest}. This interface is central
- * to the execution of Maven commands and builds, but it does not construct nor fully parses arguments.
+ * to the execution of Maven commands and builds, but it does not construct nor fully parse arguments.
  */
 public interface Executor extends AutoCloseable {
     // Logic borrowed from Commons-Lang3
@@ -54,7 +54,7 @@ public interface Executor extends AutoCloseable {
     String mavenVersion() throws ExecutorException;
 
     /**
-     * Closes and disposes of this {@link Executor} instance, releasing any resources it may hold.
+     * Closes and disposes of this {@link Executor} instance, releasing any resources it holds.
      * This method is called automatically when using try-with-resources statements.
      *
      * <p>The default implementation does nothing. Subclasses should override this method
