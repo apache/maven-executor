@@ -386,7 +386,13 @@ public abstract class MavenExecutorTestSupport {
             ExecutorResult result = invoker.execute(request);
             int exitCode = result.exitCode().orElseThrow(() -> new NoSuchElementException("No such element"));
             if (exitCode != 0) {
-                throw new FailedExecution(request, exitCode, readString(logFile));
+                String stdout = result.stdOutString()
+                        .map(s -> "=== STDOUT ===" + System.lineSeparator() + s)
+                        .orElse("");
+                stdout += result.stdErrString()
+                        .map(s -> "=== STDERR ===" + System.lineSeparator() + s)
+                        .orElse("");
+                throw new FailedExecution(request, exitCode, readString(logFile) + stdout);
             }
         }
     }
@@ -400,8 +406,10 @@ public abstract class MavenExecutorTestSupport {
     }
 
     protected ExecutorRequest.Builder customizedRequest(ExecutorRequest.Builder builder) {
-        builder =
-                builder.cwd(cwd).userHomeDirectory(userHome).argument("-Daether.remoteRepositoryFilter.prefixes=false");
+        builder = builder.cwd(cwd)
+                .userHomeDirectory(userHome)
+                .argument("-Daether.remoteRepositoryFilter.prefixes=false")
+                .grabOutputAsString(true);
         if (System.getProperty("localRepository") != null) {
             builder.argument("-Dmaven.repo.local.tail=" + System.getProperty("localRepository"));
         }
