@@ -387,9 +387,11 @@ public abstract class MavenExecutorTestSupport {
             int exitCode = result.exitCode().orElseThrow(() -> new NoSuchElementException("No such element"));
             if (exitCode != 0) {
                 String stdout = result.stdOutString()
+                        .filter(s -> !s.isEmpty())
                         .map(s -> "=== STDOUT ===" + System.lineSeparator() + s)
                         .orElse("");
                 stdout += result.stdErrString()
+                        .filter(s -> !s.isEmpty())
                         .map(s -> "=== STDERR ===" + System.lineSeparator() + s)
                         .orElse("");
                 throw new FailedExecution(request, exitCode, readString(logFile) + stdout);

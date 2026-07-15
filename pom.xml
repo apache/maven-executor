@@ -251,6 +251,9 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <useModulePath>false</useModulePath>
+            <excludedEnvironmentVariables>
+              <excludedEnvironmentVariable>MAVEN_ARGS</excludedEnvironmentVariable>
+            </excludedEnvironmentVariables>
           </configuration>
         </plugin>
       </plugins>
