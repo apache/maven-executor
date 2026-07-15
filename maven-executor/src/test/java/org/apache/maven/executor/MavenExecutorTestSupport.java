@@ -386,7 +386,7 @@ public abstract class MavenExecutorTestSupport {
             ExecutorResult result = invoker.execute(request);
             int exitCode = result.exitCode().orElseThrow(() -> new NoSuchElementException("No such element"));
             if (exitCode != 0) {
-                throw new FailedExecution(request, exitCode, logFile == null ? "" : readString(logFile));
+                throw new FailedExecution(request, exitCode, readString(logFile));
             }
         }
     }
@@ -442,7 +442,11 @@ public abstract class MavenExecutorTestSupport {
     }
 
     private static String readString(Path path) throws IOException {
-        return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+        if (Files.exists(path)) {
+            return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+        } else {
+            return "no such file: " + path;
+        }
     }
 
     private static void writeString(Path path, String content) throws IOException {
