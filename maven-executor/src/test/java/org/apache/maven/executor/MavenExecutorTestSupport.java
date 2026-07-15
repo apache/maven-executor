@@ -452,6 +452,10 @@ public abstract class MavenExecutorTestSupport {
     }
 
     private static String readString(Path path) throws IOException {
+        if (path == null) {
+            return "";
+        }
+
         if (Files.exists(path)) {
             return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
         } else {
