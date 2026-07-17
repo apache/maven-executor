@@ -30,6 +30,7 @@ public class EmbeddedMavenExecutorTest extends MavenExecutorTestSupport {
 
     @Override
     protected Executor doSelectExecutor(Path installationDirectory) {
-        return new EmbeddedMavenExecutor(installationDirectory);
+        // don't use MAVEN_ARGS environment variable for tests
+        return new EmbeddedMavenExecutor(installationDirectory, false);
     }
 }
