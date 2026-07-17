@@ -30,7 +30,6 @@ public class ForkedMavenExecutorTest extends MavenExecutorTestSupport {
 
     @Override
     protected Executor doSelectExecutor(Path installationDirectory) {
-        // don't use MAVEN_ARGS environment variable for tests
-        return new ForkedMavenExecutor(installationDirectory, false);
+        return new ForkedMavenExecutor(installationDirectory);
     }
 }
