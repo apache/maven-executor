@@ -386,7 +386,15 @@ public abstract class MavenExecutorTestSupport {
             ExecutorResult result = invoker.execute(request);
             int exitCode = result.exitCode().orElseThrow(() -> new NoSuchElementException("No such element"));
             if (exitCode != 0) {
-                throw new FailedExecution(request, exitCode, logFile == null ? "" : readString(logFile));
+                String stdout = result.stdOutString()
+                        .filter(s -> !s.isEmpty())
+                        .map(s -> "=== STDOUT ===" + System.lineSeparator() + s)
+                        .orElse("");
+                stdout += result.stdErrString()
+                        .filter(s -> !s.isEmpty())
+                        .map(s -> "=== STDERR ===" + System.lineSeparator() + s)
+                        .orElse("");
+                throw new FailedExecution(request, exitCode, readString(logFile) + stdout);
             }
         }
     }
@@ -400,8 +408,10 @@ public abstract class MavenExecutorTestSupport {
     }
 
     protected ExecutorRequest.Builder customizedRequest(ExecutorRequest.Builder builder) {
-        builder =
-                builder.cwd(cwd).userHomeDirectory(userHome).argument("-Daether.remoteRepositoryFilter.prefixes=false");
+        builder = builder.cwd(cwd)
+                .userHomeDirectory(userHome)
+                .argument("-Daether.remoteRepositoryFilter.prefixes=false")
+                .grabOutputAsString(true);
         if (System.getProperty("localRepository") != null) {
             builder.argument("-Dmaven.repo.local.tail=" + System.getProperty("localRepository"));
         }
@@ -442,7 +452,15 @@ public abstract class MavenExecutorTestSupport {
     }
 
     private static String readString(Path path) throws IOException {
-        return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+        if (path == null) {
+            return "";
+        }
+
+        if (Files.exists(path)) {
+            return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+        } else {
+            return "no such file: " + path;
+        }
     }
 
     private static void writeString(Path path, String content) throws IOException {

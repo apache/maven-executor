@@ -148,6 +148,10 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
 
         ProcessBuilder pb =
                 new ProcessBuilder().directory(executorRequest.cwd().toFile()).command(cmdAndArguments);
+        // we already used it if configured to do so
+        // ProcessBuilder copy system env during initialize
+        pb.environment().remove("MAVEN_ARGS");
+
         if (!env.isEmpty()) {
             pb.environment().putAll(env);
         }
