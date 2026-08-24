@@ -244,6 +244,12 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <useModulePath>false</useModulePath>
+            <!--
+              ! Tests fork real Maven builds, so a wedged fork otherwise produces no output at all
+              ! until the CI job itself is killed. The fail-fast-build job allows 15 minutes; a
+              ! healthy run of the whole module takes well under two.
+            -->
+            <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
           </configuration>
         </plugin>
       </plugins>
