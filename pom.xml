@@ -250,6 +250,16 @@
               ! healthy run of the whole module takes well under two.
             -->
             <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
+            <!--
+              ! @Timeout defaults to SAME_THREAD, where the watcher interrupts the test thread once and
+              ! then has nothing left to fire. Code that catches InterruptedException and re-enters the
+              ! blocking call outlives that single interrupt, and the test hangs anyway. A separate
+              ! thread reports the timeout from the watcher side, whether or not the worker unblocks,
+              ! and carries the stack trace of the frame that blocked.
+            -->
+            <properties>
+              <configurationParameters>junit.jupiter.execution.timeout.thread.mode.default = SEPARATE_THREAD</configurationParameters>
+            </properties>
           </configuration>
         </plugin>
       </plugins>
