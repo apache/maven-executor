@@ -31,3 +31,6 @@ jobs:
       jdk-matrix: '[ "17", "21", "26" ]'
       maven4-enabled: true
       maven4-version: '4.0.0-rc-6' # the same as used in project
+      # redirectTestOutputToFile keeps per-test output out of the job log, so on a failure the
+      # reports are the only record of what the test printed before it stopped.
+      failure-upload-path: '**/target/surefire-reports'
