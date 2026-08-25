@@ -71,7 +71,7 @@
     <testTmpDir>${project.build.directory}/tmp</testTmpDir>
 
     <version.maven3>3.9.16</version.maven3>
-    <version.maven3resolver>1.9.27</version.maven3resolver>
+    <version.maven3resolver>2.0.22</version.maven3resolver>
     <version.maven4>4.0.0-rc-6</version.maven4>
     <version.slf4j>2.0.18</version.slf4j>
     <version.mockito>5.23.0</version.mockito>
