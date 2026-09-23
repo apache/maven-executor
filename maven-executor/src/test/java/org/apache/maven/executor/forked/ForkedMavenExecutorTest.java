@@ -18,15 +18,36 @@
  */
 package org.apache.maven.executor.forked;
 
+import java.io.PipedInputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.NoSuchElementException;
 
+import org.apache.maven.executor.Environment;
 import org.apache.maven.executor.Executor;
+import org.apache.maven.executor.ExecutorResult;
 import org.apache.maven.executor.MavenExecutorTestSupport;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Forked executor UT
  */
 public class ForkedMavenExecutorTest extends MavenExecutorTestSupport {
+
+    @Test
+    void doesNotWaitForInteractiveStdinAfterProcessExits() throws Exception {
+        ExecutorResult result = createAndMemoizeExecutor(Paths.get(Environment.MAVEN4_HOME))
+                .execute(customizedRequest()
+                        .argument("-version")
+                        .stdIn(new PipedInputStream())
+                        .executionTimeout(Duration.ofSeconds(10))
+                        .build());
+
+        assertEquals(0, result.exitCode().orElseThrow(NoSuchElementException::new));
+    }
 
     @Override
     protected Executor doSelectExecutor(Path installationDirectory) {
