@@ -75,37 +75,32 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
                 stdOut = execution.stdOut().orElse(IOTools.nullOutputStream());
                 stdErr = execution.stdErr().orElse(IOTools.nullOutputStream());
             }
+            CountDownLatch outputPump = pump(process, stdIn, stdOut, stdErr);
+            boolean processFinished;
             if (execution.executionTimeout().isPresent()) {
                 long timeoutMillis = execution
                         .executionTimeout()
                         .orElseThrow(() -> new NoSuchElementException("No such element"))
                         .toMillis();
-                if (pump(process, stdIn, stdOut, stdErr).await(timeoutMillis, TimeUnit.MILLISECONDS)) {
-                    int exitCode = process.waitFor();
-                    String stdOutString = null;
-                    String stdErrString = null;
-                    if (execution.grabOutputAsString()) {
-                        // they are ByteArrayOutputStreams
-                        stdOutString = stdOut.toString();
-                        stdErrString = stdErr.toString();
-                    }
-                    return new SimpleExecutionResult(execution, exitCode == 0, exitCode, stdOutString, stdErrString);
-                } else {
+                processFinished = process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS);
+                if (!processFinished) {
                     process.destroyForcibly();
                     throw new ExecutorException("Process timeout: " + execution);
                 }
             } else {
-                pump(process, stdIn, stdOut, stdErr).await();
-                int exitCode = process.waitFor();
-                String stdOutString = null;
-                String stdErrString = null;
-                if (execution.grabOutputAsString()) {
-                    // they are ByteArrayOutputStreams
-                    stdOutString = stdOut.toString();
-                    stdErrString = stdErr.toString();
-                }
-                return new SimpleExecutionResult(execution, exitCode == 0, exitCode, stdOutString, stdErrString);
+                process.waitFor();
             }
+            process.getOutputStream().close();
+            outputPump.await();
+            int exitCode = process.exitValue();
+            String stdOutString = null;
+            String stdErrString = null;
+            if (execution.grabOutputAsString()) {
+                // they are ByteArrayOutputStreams
+                stdOutString = stdOut.toString();
+                stdErrString = stdErr.toString();
+            }
+            return new SimpleExecutionResult(execution, exitCode == 0, exitCode, stdOutString, stdErrString);
         } catch (IOException e) {
             if (process != null) {
                 process.destroyForcibly();
@@ -118,7 +113,7 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
     }
 
     protected CountDownLatch pump(Process p, InputStream stdIn, OutputStream stdOut, OutputStream stdErr) {
-        CountDownLatch latch = new CountDownLatch(3);
+        CountDownLatch latch = new CountDownLatch(2);
         String suffix = "-pump-" + ThreadLocalRandom.current().nextInt();
         Thread stdoutPump = new Thread(() -> {
             try (OutputStream stdout = stdOut) {
@@ -152,8 +147,6 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
                 in.flush();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
-            } finally {
-                latch.countDown();
             }
         });
         stdinPump.setName("stdin" + suffix);
