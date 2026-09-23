@@ -136,6 +136,8 @@ public class EmbeddedMavenExecutor implements Executor {
         if (closed.get()) {
             throw new ExecutorException("Executor is closed");
         }
+        Properties originalProperties = new Properties();
+        originalProperties.putAll(System.getProperties());
         validate(executorRequest);
         String command = executorRequest.command();
         Context context = contextMap.computeIfAbsent(

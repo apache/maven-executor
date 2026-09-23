@@ -18,18 +18,63 @@
  */
 package org.apache.maven.executor.embedded;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Properties;
 
+import org.apache.maven.executor.Environment;
 import org.apache.maven.executor.Executor;
+import org.apache.maven.executor.ExecutorRequest;
 import org.apache.maven.executor.MavenExecutorTestSupport;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Embedded executor UT
  */
 public class EmbeddedMavenExecutorTest extends MavenExecutorTestSupport {
 
+    @TempDir
+    Path tempDir;
+
     @Override
     protected Executor doSelectExecutor(Path installationDirectory) {
         return new EmbeddedMavenExecutor(installationDirectory);
+    }
+
+    @Test
+    void preservesSystemPropertiesSetBetweenExecutions() throws Exception {
+        String propertyName = "maven.executor.test.property";
+        String originalValue = System.getProperty(propertyName);
+        EmbeddedMavenExecutor executor = new EmbeddedMavenExecutor(Paths.get(Environment.MAVEN4_HOME));
+        try {
+            Files.createDirectories(tempDir.resolve("home"));
+            ExecutorRequest request = ExecutorRequest.mavenBuilder()
+                    .cwd(tempDir)
+                    .userHomeDirectory(tempDir.resolve("home"))
+                    .argument("--version")
+                    .build();
+
+            System.clearProperty(propertyName);
+            executor.execute(request);
+            Properties properties = new Properties();
+            properties.putAll(System.getProperties());
+            properties.setProperty(propertyName, "set-between-executions");
+            System.setProperties(properties);
+
+            executor.execute(request);
+
+            assertEquals("set-between-executions", System.getProperty(propertyName));
+        } finally {
+            executor.close();
+            if (originalValue == null) {
+                System.clearProperty(propertyName);
+            } else {
+                System.setProperty(propertyName, originalValue);
+            }
+        }
     }
 }
