@@ -114,7 +114,7 @@ public interface ExecutorRequest {
      * Optional consumer for STD out of the Maven. If given, this consumer will get all output from the std out of
      * Maven. Note: whether consumer gets to consume anything depends on invocation arguments passed in
      * {@link #arguments()}, as if log file is set, not much will go to stdout.
-     * The stream is closed once tool execution is finished.
+     * The stream is not closed by the executor.
      *
      * @return an Optional containing the stdout consumer, or empty if not specified.
      */
@@ -124,7 +124,7 @@ public interface ExecutorRequest {
      * Optional consumer for STD err of the Maven. If given, this consumer will get all output from the std err of
      * Maven. Note: whether consumer gets to consume anything depends on invocation arguments passed in
      * {@link #arguments()}, as if log file is set, not much will go to stderr.
-     *  The stream is closed once tool execution is finished.
+     *  The stream is not closed by the executor.
      *
      * @return an Optional containing the stderr consumer, or empty if not specified.
      */
