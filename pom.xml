@@ -70,18 +70,8 @@
     <project.build.outputTimestamp>2026-06-12T10:14:54Z</project.build.outputTimestamp>
     <testTmpDir>${project.build.directory}/tmp</testTmpDir>
 
-    <!--
-      ! Pinned below the version maven-parent 50 (apache 40) manages. 3.16.0's stricter
-      ! "recompile when dependencies change" check forces docker-exe's compile-java9 to
-      ! rerun inside the site plugin's forked, compile-only javadoc:aggregate build, where
-      ! reactor dependencies are still plain target/classes directories. module-info there
-      ! only sees maven-executor's MR-JAR module descriptor once it is packaged as a real
-      ! jar (META-INF/versions/9 is a jar-format concept), so the forked compile fails with
-      ! "module not found: org.apache.maven.executor". 3.15.0's weaker staleness check
-      ! instead reuses the classes already compiled during the preceding `verify`, where
-      ! packaging happens before docker-exe compiles and the module is visible.
-      ! Remove this pin only once that forked-compile module path resolution is fixed.
-    -->
+    <!-- 3.16.0 recompiles docker-exe inside the site build, where the sibling's MR-JAR module-info
+         (META-INF/versions/9) is not visible from target/classes; a clean compile fails on 3.15.0 too. -->
     <version.maven-compiler-plugin>3.15.0</version.maven-compiler-plugin>
     <version.maven3>3.9.16</version.maven3>
     <version.maven3resolver>1.9.27</version.maven3resolver>
