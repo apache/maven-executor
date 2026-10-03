@@ -62,8 +62,16 @@ final class ProcessTrees {
         if (TO_HANDLE != null) {
             try {
                 Object handle = TO_HANDLE.invoke(process);
-                Stream<?> descendants = (Stream<?>) DESCENDANTS.invoke(handle);
-                descendants.forEach(ProcessTrees::destroyHandleForcibly);
+                // a descendant may start a process while the snapshot is being destroyed; take a few more snapshots
+                for (int pass = 0; pass < 3; pass++) {
+                    Object[] descendants = ((Stream<?>) DESCENDANTS.invoke(handle)).toArray();
+                    if (descendants.length == 0) {
+                        break;
+                    }
+                    for (Object descendant : descendants) {
+                        destroyHandleForcibly(descendant);
+                    }
+                }
             } catch (ReflectiveOperationException | RuntimeException e) {
                 // best effort: the process itself is still destroyed below
             }
