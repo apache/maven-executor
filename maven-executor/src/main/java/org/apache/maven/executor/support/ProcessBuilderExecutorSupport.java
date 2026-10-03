@@ -33,6 +33,7 @@ import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorRequest;
 import org.apache.maven.executor.ExecutorResult;
+import org.apache.maven.executor.ExecutorTimeoutException;
 
 import static java.util.Objects.requireNonNull;
 
@@ -40,6 +41,8 @@ import static java.util.Objects.requireNonNull;
  * Support class for executor implementations using {@link ProcessBuilder}.
  */
 public abstract class ProcessBuilderExecutorSupport implements Executor {
+    private static final long DRAIN_MILLIS = 5000;
+
     protected final AtomicBoolean closed;
 
     protected ProcessBuilderExecutorSupport() {
@@ -80,7 +83,8 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
                         .executionTimeout()
                         .orElseThrow(() -> new NoSuchElementException("No such element"))
                         .toMillis();
-                if (pump(process, stdIn, stdOut, stdErr).await(timeoutMillis, TimeUnit.MILLISECONDS)) {
+                CountDownLatch pumps = pump(process, stdIn, stdOut, stdErr);
+                if (pumps.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
                     int exitCode = process.waitFor();
                     String stdOutString = null;
                     String stdErrString = null;
@@ -92,7 +96,17 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
                     return new SimpleExecutionResult(execution, exitCode == 0, exitCode, stdOutString, stdErrString);
                 } else {
                     ProcessTrees.destroyForcibly(process);
-                    throw new ExecutorException("Process timeout: " + execution);
+                    // the pumps finish once the destroyed processes have closed their pipes; wait for them, but
+                    // not for long, since a descendant that survived (Java 8) keeps the pipes open
+                    pumps.await(DRAIN_MILLIS, TimeUnit.MILLISECONDS);
+                    String stdOutString = null;
+                    String stdErrString = null;
+                    if (execution.grabOutputAsString()) {
+                        // they are ByteArrayOutputStreams, whose methods are synchronized
+                        stdOutString = stdOut.toString();
+                        stdErrString = stdErr.toString();
+                    }
+                    throw new ExecutorTimeoutException("Process timeout: " + execution, stdOutString, stdErrString);
                 }
             } else {
                 pump(process, stdIn, stdOut, stdErr).await();
