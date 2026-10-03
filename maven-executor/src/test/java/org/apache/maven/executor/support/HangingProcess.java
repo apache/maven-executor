@@ -22,17 +22,22 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.lang.ProcessBuilder.Redirect;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 
 /**
  * Stands in for a Maven build that hangs: {@code parent <heartbeat>} prints a line to STDOUT and one to STDERR, starts
  * {@code child <heartbeat>} as its own child process, and sleeps; the child appends to the heartbeat file every 50ms,
- * like a forked test JVM that never ends. Both give up after {@link #LIFETIME_MILLIS}, so a failing test leaves no
+ * like a forked test JVM that never ends. {@code noisy <heartbeat>} prints {@link #NOISY_LINES} lines to STDOUT,
+ * then {@link #LAST_LINE}, and sleeps. Both give up after {@link #LIFETIME_MILLIS}, so a failing test leaves no
  * process behind for long.
  */
 public final class HangingProcess {
     static final String STDOUT_LINE = "parent started";
     static final String STDERR_LINE = "parent warning";
     static final long LIFETIME_MILLIS = 30_000;
+    static final int NOISY_LINES = 200_000;
+    static final String LAST_LINE = "last line before the hang";
 
     private HangingProcess() {}
 
@@ -40,14 +45,24 @@ public final class HangingProcess {
         return java("parent", heartbeat);
     }
 
+    static ProcessBuilder noisy(File heartbeat) {
+        return java("noisy", heartbeat);
+    }
+
     private static ProcessBuilder java(String mode, File heartbeat) {
         String java = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
-        String classPath = new File(HangingProcess.class
-                        .getProtectionDomain()
-                        .getCodeSource()
-                        .getLocation()
-                        .getPath())
-                .getPath();
+        String classPath;
+        try {
+            // toURI() decodes %20 and turns /D:/ into D:\ on Windows
+            classPath = Paths.get(HangingProcess.class
+                            .getProtectionDomain()
+                            .getCodeSource()
+                            .getLocation()
+                            .toURI())
+                    .toString();
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException(e);
+        }
         return new ProcessBuilder(
                 java, "-cp", classPath, HangingProcess.class.getName(), mode, heartbeat.getAbsolutePath());
     }
@@ -64,6 +79,12 @@ public final class HangingProcess {
             System.out.flush();
             System.err.println(STDERR_LINE);
             System.err.flush();
+        } else if ("noisy".equals(args[0])) {
+            for (int i = 0; i < NOISY_LINES; i++) {
+                System.out.println("line " + i + " of the output a hung build keeps writing");
+            }
+            System.out.println(LAST_LINE);
+            System.out.flush();
         } else {
             try (OutputStream out = new FileOutputStream(heartbeat, true)) {
                 while (System.currentTimeMillis() < deadline) {
