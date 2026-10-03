@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -72,8 +73,8 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
             OutputStream stdOut;
             OutputStream stdErr;
             if (execution.grabOutputAsString()) {
-                stdOut = new ByteArrayOutputStream();
-                stdErr = new ByteArrayOutputStream();
+                stdOut = new GrabbedOutput();
+                stdErr = new GrabbedOutput();
             } else {
                 stdOut = execution.stdOut().orElse(IOTools.nullOutputStream());
                 stdErr = execution.stdErr().orElse(IOTools.nullOutputStream());
@@ -98,15 +99,16 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
                     ProcessTrees.destroyForcibly(process);
                     // the pumps finish once the destroyed processes have closed their pipes; wait for them, but
                     // not for long, since a descendant that survived (Java 8) keeps the pipes open
+                    // an interrupt here takes the InterruptedException branch below, without the tail
                     pumps.await(DRAIN_MILLIS, TimeUnit.MILLISECONDS);
-                    String stdOutString = null;
-                    String stdErrString = null;
+                    String stdOutTail = null;
+                    String stdErrTail = null;
                     if (execution.grabOutputAsString()) {
-                        // they are ByteArrayOutputStreams, whose methods are synchronized
-                        stdOutString = stdOut.toString();
-                        stdErrString = stdErr.toString();
+                        // only the tail: a hung build may have logged far more than fits in a second copy
+                        stdOutTail = ((GrabbedOutput) stdOut).tail(ExecutorTimeoutException.MAX_TAIL_BYTES);
+                        stdErrTail = ((GrabbedOutput) stdErr).tail(ExecutorTimeoutException.MAX_TAIL_BYTES);
                     }
-                    throw new ExecutorTimeoutException("Process timeout: " + execution, stdOutString, stdErrString);
+                    throw new ExecutorTimeoutException("Process timeout: " + execution, stdOutTail, stdErrTail);
                 }
             } else {
                 pump(process, stdIn, stdOut, stdErr).await();
@@ -128,6 +130,29 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
         } catch (InterruptedException e) {
             ProcessTrees.destroyForcibly(process);
             throw new ExecutorException("Interrupted while executing command: " + execution, e);
+        }
+    }
+
+    /**
+     * Grabbed output that can also hand out its tail without copying the whole buffer.
+     */
+    static final class GrabbedOutput extends ByteArrayOutputStream {
+        /**
+         * The last {@code maxBytes} bytes at most. When cut, the tail starts after the first line break in that
+         * window; a window without one starts mid-line, and a leading partial multibyte sequence decodes as U+FFFD.
+         */
+        synchronized String tail(int maxBytes) {
+            int from = Math.max(0, count - maxBytes);
+            if (from > 0) {
+                // a break as the last byte would leave nothing
+                for (int i = from; i < count - 1; i++) {
+                    if (buf[i] == '\n') {
+                        from = i + 1;
+                        break;
+                    }
+                }
+            }
+            return new String(buf, from, count - from, Charset.defaultCharset());
         }
     }
 
