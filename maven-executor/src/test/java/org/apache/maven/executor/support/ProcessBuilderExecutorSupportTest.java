@@ -22,9 +22,9 @@ import java.io.File;
 import java.nio.file.Path;
 import java.time.Duration;
 
-import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorRequest;
 import org.apache.maven.executor.ExecutorResult;
+import org.apache.maven.executor.ExecutorTimeoutException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -45,13 +45,26 @@ class ProcessBuilderExecutorSupportTest {
         File heartbeat = tempDir.resolve("heartbeat").toFile();
 
         assertThrows(
-                ExecutorException.class,
+                ExecutorTimeoutException.class,
                 () -> new TestExecutor().execute(request(Duration.ofSeconds(5)), HangingProcess.parent(heartbeat)));
 
         assertTrue(heartbeat.length() > 0, "the child never started, so the test proves nothing");
         long length = heartbeat.length();
         Thread.sleep(1000);
         assertEquals(length, heartbeat.length(), "the child process outlived the timeout");
+    }
+
+    @Test
+    void timeoutKeepsTheGrabbedOutput() {
+        File heartbeat = tempDir.resolve("heartbeat").toFile();
+
+        ExecutorTimeoutException e = assertThrows(
+                ExecutorTimeoutException.class,
+                () -> new TestExecutor().execute(request(Duration.ofSeconds(5)), HangingProcess.parent(heartbeat)));
+
+        assertTrue(e.getMessage().startsWith("Process timeout: "), e.getMessage());
+        assertEquals(HangingProcess.STDOUT_LINE, e.stdOutString().orElse("").trim());
+        assertEquals(HangingProcess.STDERR_LINE, e.stdErrString().orElse("").trim());
     }
 
     private static boolean hasProcessHandle() {

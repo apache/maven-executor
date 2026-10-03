@@ -141,6 +141,9 @@ public interface ExecutorRequest {
      * The optional execution time limit. If set, and execution does not finish within the given time, it is considered
      * failed and killed. If not set, no time limit is applied. Depending on implementation, the timeout detection may
      * be imprecise.
+     * <p>
+     * The forked executor kills the started process together with the processes it started (on Java 9 and later), and
+     * throws {@link ExecutorTimeoutException}, which carries the output grabbed so far.
      */
     Optional<Duration> executionTimeout();
 
