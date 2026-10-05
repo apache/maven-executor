@@ -33,6 +33,11 @@ implementations out of the box: "forked" and "embedded". There are more provider
 * `docker-exe` uses Docker CLI and runs [Apache Maven Docker Image](https://hub.docker.com/_/maven)
 * `testcontainers` uses Docker via TestContainers and runs [Apache Maven Docker Image](https://hub.docker.com/_/maven)
 
+For test suites, `maven-executor-verifier` provides a `Verifier` on top of the executors: it runs Maven on a test
+project, writes the log, and checks the log, project files and artifacts in the local repository, with a
+`ResourceExtractor` that copies test projects from the class path. It is the successor of maven-verifier's
+`Verifier`, and depends on `maven-executor` only.
+
 Versions and Branches
 ---------------------
 
