@@ -44,6 +44,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import org.apache.maven.executor.Executor;
@@ -430,6 +432,7 @@ public class EmbeddedMavenExecutor implements Executor {
         Thread.currentThread().setContextClassLoader(context.bootClassLoader);
         try {
             try {
+                removeJulHandlersLoadedByMaven(context);
                 ((Closeable) context.classWorld).close();
             } finally {
                 context.bootClassLoader.close();
@@ -439,6 +442,42 @@ public class EmbeddedMavenExecutor implements Executor {
         } finally {
             Thread.currentThread().setContextClassLoader(originalClassLoader);
         }
+    }
+
+    /**
+     * Maven may install a {@code java.util.logging} handler (like the SLF4J bridge) on the root logger. The root logger
+     * is JVM-global, while the handler class belongs to a Maven realm, so once the realm is closed the handler fails
+     * with {@link NoClassDefFoundError} on the first record logged by anyone in this JVM. Hence, uninstall them.
+     */
+    private void removeJulHandlersLoadedByMaven(Context context) {
+        Logger root = Logger.getLogger("");
+        for (Handler handler : root.getHandlers()) {
+            if (isLoadedByMaven(handler.getClass().getClassLoader(), context)) {
+                root.removeHandler(handler);
+                try {
+                    handler.close();
+                } catch (RuntimeException | LinkageError e) {
+                    // best effort: the handler is already detached
+                }
+            }
+        }
+    }
+
+    private boolean isLoadedByMaven(ClassLoader classLoader, Context context) {
+        if (classLoader == null) {
+            return false;
+        }
+        if (classLoader == context.bootClassLoader) {
+            return true;
+        }
+        if (classLoader.getClass().getName().equals("org.codehaus.plexus.classworlds.realm.ClassRealm")) {
+            try {
+                return classLoader.getClass().getMethod("getWorld").invoke(classLoader) == context.classWorld;
+            } catch (ReflectiveOperationException e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     protected void validate(ExecutorRequest executorRequest) throws ExecutorException {}
