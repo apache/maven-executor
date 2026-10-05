@@ -34,8 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * {@link Verifier} running Maven 3 and Maven 4 on the test projects. Embedded Maven 4 is left out: it hangs instead of
- * failing on a failed build (E1 in apache/maven-executor#49).
+ * {@link Verifier} running Maven 3 and Maven 4, forked and embedded, on the test projects.
  */
 @Timeout(300)
 class VerifierExecuteTest {
@@ -48,7 +47,8 @@ class VerifierExecuteTest {
         return Stream.of(
                 Arguments.of("3", ExecutorHelper.Mode.FORKED),
                 Arguments.of("3", ExecutorHelper.Mode.EMBEDDED),
-                Arguments.of("4", ExecutorHelper.Mode.FORKED));
+                Arguments.of("4", ExecutorHelper.Mode.FORKED),
+                Arguments.of("4", ExecutorHelper.Mode.EMBEDDED));
     }
 
     private Verifier verifier(String maven, ExecutorHelper.Mode mode, ExecutorHelper helper, String project)
