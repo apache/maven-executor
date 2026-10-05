@@ -36,7 +36,8 @@ public class EmbeddedMavenExecutorTest extends MavenExecutorTestSupport {
     /**
      * Maven 3.10 colors only if its JLine terminal is installed, and that happens in {@code MavenCli.main} but not in
      * the {@code MavenCli.doMain} entry point used by embedded execution, so {@code --color=yes} has no effect there.
-     * Maven 3.9 kept the flag in a static and honored it.
+     * Maven 3.9 kept the flag in a static and honored it. Tracked in
+     * <a href="https://github.com/apache/maven/issues/13357">apache/maven#13357</a>.
      */
     @Override
     protected boolean maven3HonorsForcedColor() {
