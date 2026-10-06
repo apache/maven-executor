@@ -44,6 +44,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import org.apache.maven.executor.Executor;
@@ -146,6 +148,7 @@ public class EmbeddedMavenExecutor implements Executor {
                     "Unknown command: '" + command + "' for '" + installationDirectory + "'");
         }
 
+        Handler[] rootLoggerHandlers = Logger.getLogger("").getHandlers();
         Thread.currentThread().setContextClassLoader(context.tccl);
         try {
             return exec.apply(executorRequest);
@@ -160,7 +163,24 @@ public class EmbeddedMavenExecutor implements Executor {
                 System.setErr(originalStderr);
                 Thread.currentThread().setContextClassLoader(originalClassLoader);
                 System.setProperties(originalProperties);
+                restoreRootLoggerHandlers(rootLoggerHandlers);
             }
+        }
+    }
+
+    /**
+     * Maven 4 replaces the handlers of the {@code java.util.logging} root logger with jul-to-slf4j's
+     * {@code SLF4JBridgeHandler}, whose classes come from Maven's realm: left in place, it breaks every later
+     * {@code java.util.logging} record of this JVM once the realm is closed. Puts back the handlers the root logger had
+     * before the execution.
+     */
+    private static void restoreRootLoggerHandlers(Handler[] handlers) {
+        Logger root = Logger.getLogger("");
+        for (Handler handler : root.getHandlers()) {
+            root.removeHandler(handler);
+        }
+        for (Handler handler : handlers) {
+            root.addHandler(handler);
         }
     }
 
