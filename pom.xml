@@ -74,7 +74,7 @@
          (META-INF/versions/9) is not visible from target/classes; a clean compile fails on 3.15.0 too. -->
     <version.maven-compiler-plugin>3.15.0</version.maven-compiler-plugin>
     <version.maven3>3.9.16</version.maven3>
-    <version.maven3resolver>1.9.27</version.maven3resolver>
+    <version.maven3resolver>2.0.24</version.maven3resolver>
     <version.maven4>4.0.0-rc-7</version.maven4>
     <version.slf4j>2.0.18</version.slf4j>
     <version.mockito>5.24.0</version.mockito>
