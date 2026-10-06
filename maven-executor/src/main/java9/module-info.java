@@ -18,6 +18,8 @@
  */
 
 module org.apache.maven.executor {
+    requires java.logging;
+
     exports org.apache.maven.executor;
     exports org.apache.maven.executor.forked;
     exports org.apache.maven.executor.embedded;
