@@ -286,6 +286,14 @@
             </properties>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>org.apache.tooling</groupId>
+          <artifactId>atr-maven-plugin</artifactId>
+          <configuration>
+            <!-- override - the default is project.artifactId -->
+            <project>maven-executor</project>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins />
