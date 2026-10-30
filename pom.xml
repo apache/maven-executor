@@ -65,7 +65,6 @@
   </distributionManagement>
 
   <properties>
-    <javaVersion>8</javaVersion>
     <maven.site.path>executor-archives/executor-LATEST</maven.site.path>
     <project.build.outputTimestamp>2026-06-12T10:14:54Z</project.build.outputTimestamp>
     <testTmpDir>${project.build.directory}/tmp</testTmpDir>
