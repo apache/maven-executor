@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
 import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
@@ -113,19 +112,19 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
                     .forEach(cmdAndArguments::add);
         }
 
+        // system properties go on the command line: the launcher scripts split MAVEN_OPTS on whitespace, a command
+        // line argument is passed to the process as is; they come before the request arguments, so an explicit -D wins
+        if (executorRequest.jvmSystemProperties().isPresent()) {
+            executorRequest.jvmSystemProperties().get().forEach((k, v) -> cmdAndArguments.add("-D" + k + "=" + v));
+        }
         cmdAndArguments.addAll(executorRequest.arguments());
 
         ArrayList<String> jvmArgs = new ArrayList<>();
         if (!executorRequest.userHomeDirectory().equals(getCanonicalPath(Paths.get(System.getProperty("user.home"))))) {
-            jvmArgs.add("-Duser.home=" + executorRequest.userHomeDirectory().toString());
+            jvmArgs.add(quoteWhitespace("-Duser.home=" + executorRequest.userHomeDirectory()));
         }
         if (executorRequest.jvmArguments().isPresent()) {
             jvmArgs.addAll(executorRequest.jvmArguments().get());
-        }
-        if (executorRequest.jvmSystemProperties().isPresent()) {
-            jvmArgs.addAll(executorRequest.jvmSystemProperties().get().entrySet().stream()
-                    .map(e -> "-D" + e.getKey() + "=" + e.getValue())
-                    .collect(Collectors.toList()));
         }
 
         HashMap<String, String> env = new HashMap<>();
@@ -156,5 +155,19 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
             pb.environment().putAll(env);
         }
         return doExecuteProcess(executorRequest, pb);
+    }
+
+    /**
+     * Wraps a MAVEN_OPTS token that contains whitespace in double quotes. The quotes are honored by {@code mvn.cmd}
+     * (the Java launcher parses the command line) and by the Maven 4 {@code mvn} script (which evaluates MAVEN_OPTS);
+     * the Maven 3 {@code mvn} script only word-splits MAVEN_OPTS, so there a token cannot contain whitespace at all.
+     */
+    private static String quoteWhitespace(String token) {
+        for (int i = 0; i < token.length(); i++) {
+            if (Character.isWhitespace(token.charAt(i))) {
+                return "\"" + token + "\"";
+            }
+        }
+        return token;
     }
 }
