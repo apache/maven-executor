@@ -73,6 +73,12 @@ public interface ExecutorRequest {
 
     /**
      * Returns the map of Java System Properties to set before executing process.
+     * <p>
+     * Embedded executors set them as system properties of this JVM for the duration of the execution. Forked
+     * executors pass them to Maven as {@code -Dkey=value} command line arguments, which Maven applies as user
+     * properties and system properties of the forked JVM; this way values may contain whitespace. A property that the
+     * JVM or the launcher must see at startup, or that Maven 4 already finds among the JVM system properties (such as
+     * {@code user.home} or {@code java.io.tmpdir}), has to be passed through {@link #jvmArguments()} instead.
      *
      * @return an Optional containing the map of Java System Properties, or empty if not specified
      */
@@ -89,7 +95,8 @@ public interface ExecutorRequest {
     /**
      * Returns the list of extra JVM arguments to be passed to the forked process.
      * These arguments allow for customization of the JVM environment in which tool will run.
-     * This property is used ONLY by executors that spawn a new JVM.
+     * This property is used ONLY by executors that spawn a new JVM, which pass them through {@code MAVEN_OPTS}; the
+     * Maven 3 {@code mvn} script splits that variable on whitespace, so an argument must not contain any.
      *
      * @return an Optional containing the list of extra JVM arguments, or empty if not specified
      */
