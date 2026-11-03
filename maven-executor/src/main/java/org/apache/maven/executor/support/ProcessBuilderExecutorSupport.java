@@ -112,6 +112,7 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
             }
             throw new ExecutorException("IO problem while executing command: " + execution, e);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             process.destroyForcibly();
             throw new ExecutorException("Interrupted while executing command: " + execution, e);
         }

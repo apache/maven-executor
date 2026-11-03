@@ -19,9 +19,17 @@
 package org.apache.maven.executor.forked;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import org.apache.maven.executor.Environment;
 import org.apache.maven.executor.Executor;
+import org.apache.maven.executor.ExecutorException;
+import org.apache.maven.executor.ExecutorRequest;
 import org.apache.maven.executor.MavenExecutorTestSupport;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Forked executor UT
@@ -31,5 +39,18 @@ public class ForkedMavenExecutorTest extends MavenExecutorTestSupport {
     @Override
     protected Executor doSelectExecutor(Path installationDirectory) {
         return new ForkedMavenExecutor(installationDirectory);
+    }
+
+    @Test
+    void interruptedCallerKeepsInterruptFlag() throws Exception {
+        ExecutorRequest request = customizedRequest().argument("--version").build();
+        Executor executor = createAndMemoizeExecutor(Paths.get(Environment.MAVEN3_HOME));
+        Thread.currentThread().interrupt();
+        try {
+            assertThrows(ExecutorException.class, () -> executor.execute(request));
+        } finally {
+            // Thread.interrupted() also clears the flag, so the next test on this thread starts clean
+            assertTrue(Thread.interrupted(), "Interrupt flag must be restored for the caller");
+        }
     }
 }
