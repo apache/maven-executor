@@ -138,6 +138,12 @@ public class EmbeddedMavenExecutor implements Executor {
         if (closed.get()) {
             throw new ExecutorException("Executor is closed");
         }
+        if (executorRequest.executionTimeout().isPresent()) {
+            // a build running in this JVM cannot be killed, and abandoning it would leave the system properties,
+            // standard streams and class realms it uses to be restored under it
+            throw new IllegalArgumentException(getClass().getSimpleName() + " does not support executionTimeout: "
+                    + executorRequest.executionTimeout().get());
+        }
         validate(executorRequest);
         String command = executorRequest.command();
         Context context = contextMap.computeIfAbsent(
