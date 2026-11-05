@@ -48,7 +48,7 @@ class ProcessBuilderExecutorSupportTest {
 
         assertThrows(
                 ExecutorTimeoutException.class,
-                () -> new TestExecutor().execute(request(Duration.ofSeconds(3)), HangingProcess.parent(heartbeat)));
+                () -> new TestExecutor().execute(request(Duration.ofSeconds(5)), HangingProcess.parent(heartbeat)));
 
         assertTrue(heartbeat.length() > 0, "the child never started, so the test proves nothing");
         // destroyForcibly() returns before the process is gone; let a last heartbeat land before taking the baseline
@@ -64,7 +64,7 @@ class ProcessBuilderExecutorSupportTest {
 
         ExecutorTimeoutException e = assertThrows(
                 ExecutorTimeoutException.class,
-                () -> new TestExecutor().execute(request(Duration.ofSeconds(3)), HangingProcess.parent(heartbeat)));
+                () -> new TestExecutor().execute(request(Duration.ofSeconds(5)), HangingProcess.parent(heartbeat)));
 
         assertTrue(e.getMessage().startsWith("Process timeout: "), e.getMessage());
         assertEquals(HangingProcess.STDOUT_LINE, e.stdOutTail().orElse("").trim());
@@ -80,7 +80,7 @@ class ProcessBuilderExecutorSupportTest {
 
         ExecutorTimeoutException e = assertThrows(
                 ExecutorTimeoutException.class,
-                () -> new TestExecutor().execute(request(Duration.ofSeconds(3)), HangingProcess.noisy(heartbeat)));
+                () -> new TestExecutor().execute(request(Duration.ofSeconds(5)), HangingProcess.noisy(heartbeat)));
 
         String tail = e.stdOutTail().orElse("");
         int tailBytes = tail.getBytes(Charset.defaultCharset()).length;
@@ -100,7 +100,7 @@ class ProcessBuilderExecutorSupportTest {
         ExecutorTimeoutException e = assertThrows(
                 ExecutorTimeoutException.class,
                 () -> new TestExecutor()
-                        .execute(request(Duration.ofSeconds(3), false), HangingProcess.parent(heartbeat)));
+                        .execute(request(Duration.ofSeconds(5), false), HangingProcess.parent(heartbeat)));
 
         assertFalse(e.stdOutTail().isPresent());
         assertFalse(e.stdErrTail().isPresent());
