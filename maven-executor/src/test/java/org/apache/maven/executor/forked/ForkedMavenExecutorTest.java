@@ -21,7 +21,7 @@ package org.apache.maven.executor.forked;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.Locale;
 
 import org.apache.maven.executor.Environment;
 import org.apache.maven.executor.Executor;
@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Forked executor UT
@@ -43,21 +44,35 @@ public class ForkedMavenExecutorTest extends MavenExecutorTestSupport {
         return new ForkedMavenExecutor(installationDirectory);
     }
 
+    /** Maven 4 script evaluates MAVEN_OPTS, so the quoted token survives. */
     @Test
-    void systemPropertyValueWithSpaces() throws Exception {
+    void systemPropertyValueWithSpaces4() throws Exception {
+        assertSystemPropertyWithSpaces(Environment.MAVEN4_HOME);
+    }
+
+    /**
+     * The Maven 3 Unix {@code mvn} script word-splits MAVEN_OPTS, so a value with whitespace cannot be passed there;
+     * only {@code mvn.cmd} honors the quotes.
+     */
+    @Test
+    void systemPropertyValueWithSpaces3() throws Exception {
+        assumeTrue(
+                System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows"),
+                "the Maven 3 Unix mvn script word-splits MAVEN_OPTS");
+        assertSystemPropertyWithSpaces(Environment.MAVEN3_HOME);
+    }
+
+    private void assertSystemPropertyWithSpaces(String mavenHome) throws Exception {
         layDownFiles(customizedRequest().build().cwd());
-        for (String home : Arrays.asList(Environment.MAVEN3_HOME, Environment.MAVEN4_HOME)) {
-            ExecutorResult result = createAndMemoizeExecutor(Paths.get(home))
-                    .execute(customizedRequest()
-                            .jvmSystemProperty("executor.p", "value with spaces")
-                            .argument("help:evaluate")
-                            .argument("-Dexpression=executor.p")
-                            .build());
-            String output =
-                    result.stdOutString().orElse("") + result.stdErrString().orElse("");
-            assertEquals(0, result.exitCode().orElse(-1), output);
-            assertTrue(output.contains("value with spaces"), output);
-        }
+        ExecutorResult result = createAndMemoizeExecutor(Paths.get(mavenHome))
+                .execute(customizedRequest()
+                        .jvmSystemProperty("executor.p", "value with spaces")
+                        .argument("help:evaluate")
+                        .argument("-Dexpression=executor.p")
+                        .build());
+        String output = result.stdOutString().orElse("") + result.stdErrString().orElse("");
+        assertEquals(0, result.exitCode().orElse(-1), output);
+        assertTrue(output.contains("value with spaces"), output);
     }
 
     /**
