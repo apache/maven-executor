@@ -112,11 +112,6 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
                     .forEach(cmdAndArguments::add);
         }
 
-        // system properties go on the command line: the launcher scripts split MAVEN_OPTS on whitespace, a command
-        // line argument is passed to the process as is; they come before the request arguments, so an explicit -D wins
-        if (executorRequest.jvmSystemProperties().isPresent()) {
-            executorRequest.jvmSystemProperties().get().forEach((k, v) -> cmdAndArguments.add("-D" + k + "=" + v));
-        }
         cmdAndArguments.addAll(executorRequest.arguments());
 
         ArrayList<String> jvmArgs = new ArrayList<>();
@@ -125,6 +120,12 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
         }
         if (executorRequest.jvmArguments().isPresent()) {
             jvmArgs.addAll(executorRequest.jvmArguments().get());
+        }
+        if (executorRequest.jvmSystemProperties().isPresent()) {
+            executorRequest
+                    .jvmSystemProperties()
+                    .get()
+                    .forEach((k, v) -> jvmArgs.add(quoteWhitespace("-D" + k + "=" + v)));
         }
 
         HashMap<String, String> env = new HashMap<>();
@@ -161,6 +162,8 @@ public class ForkedMavenExecutor extends ProcessBuilderExecutorSupport implement
      * Wraps a MAVEN_OPTS token that contains whitespace in double quotes. The quotes are honored by {@code mvn.cmd}
      * (the Java launcher parses the command line) and by the Maven 4 {@code mvn} script (which evaluates MAVEN_OPTS);
      * the Maven 3 {@code mvn} script only word-splits MAVEN_OPTS, so there a token cannot contain whitespace at all.
+     * Characters that a shell treats specially ({@code $}, backticks, {@code "}) are not escaped: the Maven 4 script
+     * interprets them when it evaluates MAVEN_OPTS.
      */
     private static String quoteWhitespace(String token) {
         for (int i = 0; i < token.length(); i++) {

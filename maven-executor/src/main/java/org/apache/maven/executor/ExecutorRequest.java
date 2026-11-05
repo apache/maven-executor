@@ -75,10 +75,11 @@ public interface ExecutorRequest {
      * Returns the map of Java System Properties to set before executing process.
      * <p>
      * Embedded executors set them as system properties of this JVM for the duration of the execution. Forked
-     * executors pass them to Maven as {@code -Dkey=value} command line arguments, which Maven applies as user
-     * properties and system properties of the forked JVM; this way values may contain whitespace. A property that the
-     * JVM or the launcher must see at startup, or that Maven 4 already finds among the JVM system properties (such as
-     * {@code user.home} or {@code java.io.tmpdir}), has to be passed through {@link #jvmArguments()} instead.
+     * executors pass them as {@code -Dkey=value} through {@code MAVEN_OPTS}, so they are system properties of the
+     * forked JVM too. A value that contains whitespace is double-quoted, which {@code mvn.cmd} and the Maven 4
+     * {@code mvn} script honor; the Maven 3 Unix {@code mvn} script word-splits {@code MAVEN_OPTS}, so there such a
+     * value breaks the command line. The Maven 4 script evaluates {@code MAVEN_OPTS}, so {@code $}, backticks and
+     * {@code "} in a value are interpreted by the shell.
      *
      * @return an Optional containing the map of Java System Properties, or empty if not specified
      */
