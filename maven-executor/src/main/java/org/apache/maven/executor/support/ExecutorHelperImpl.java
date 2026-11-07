@@ -124,7 +124,8 @@ public class ExecutorHelperImpl implements ExecutorHelper {
 
     protected Executor getExecutorByRequest(ExecutorRequest request) {
         if (!request.environmentVariables().isPresent()
-                && !request.jvmArguments().isPresent()) {
+                && !request.jvmArguments().isPresent()
+                && !request.executionTimeout().isPresent()) {
             return getExecutor(Mode.EMBEDDED, request);
         } else {
             return getExecutor(Mode.FORKED, request);

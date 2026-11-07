@@ -140,7 +140,8 @@ public interface ExecutorRequest {
     /**
      * The optional execution time limit. If set, and execution does not finish within the given time, it is considered
      * failed and killed. If not set, no time limit is applied. Depending on implementation, the timeout detection may
-     * be imprecise.
+     * be imprecise. Only executors that spawn a new JVM support it; the embedded executor rejects a request that sets
+     * it.
      */
     Optional<Duration> executionTimeout();
 

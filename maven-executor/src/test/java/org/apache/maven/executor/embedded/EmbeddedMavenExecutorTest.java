@@ -19,9 +19,16 @@
 package org.apache.maven.executor.embedded;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
 
+import org.apache.maven.executor.Environment;
 import org.apache.maven.executor.Executor;
+import org.apache.maven.executor.ExecutorRequest;
 import org.apache.maven.executor.MavenExecutorTestSupport;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Embedded executor UT
@@ -31,5 +38,15 @@ public class EmbeddedMavenExecutorTest extends MavenExecutorTestSupport {
     @Override
     protected Executor doSelectExecutor(Path installationDirectory) {
         return new EmbeddedMavenExecutor(installationDirectory);
+    }
+
+    @Test
+    void executionTimeoutIsRejected() throws Exception {
+        ExecutorRequest request = customizedRequest()
+                .argument("validate")
+                .executionTimeout(Duration.ofMillis(1))
+                .build();
+        Executor executor = createAndMemoizeExecutor(Paths.get(Environment.MAVEN3_HOME));
+        assertThrows(IllegalArgumentException.class, () -> executor.execute(request));
     }
 }
