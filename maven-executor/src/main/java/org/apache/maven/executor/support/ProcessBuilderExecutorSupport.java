@@ -121,9 +121,9 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
         CountDownLatch latch = new CountDownLatch(3);
         String suffix = "-pump-" + ThreadLocalRandom.current().nextInt();
         Thread stdoutPump = new Thread(() -> {
-            try (OutputStream stdout = stdOut) {
-                IOTools.transferTo(p.getInputStream(), stdout);
-                stdout.flush();
+            try {
+                IOTools.transferTo(p.getInputStream(), stdOut);
+                stdOut.flush();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             } finally {
@@ -134,9 +134,9 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
         stdoutPump.setDaemon(true);
         stdoutPump.start();
         Thread stderrPump = new Thread(() -> {
-            try (OutputStream stderr = stdErr) {
-                IOTools.transferTo(p.getErrorStream(), stderr);
-                stderr.flush();
+            try {
+                IOTools.transferTo(p.getErrorStream(), stdErr);
+                stdErr.flush();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             } finally {
