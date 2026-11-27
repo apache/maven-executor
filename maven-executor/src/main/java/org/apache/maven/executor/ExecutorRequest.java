@@ -151,7 +151,8 @@ public interface ExecutorRequest {
      * be imprecise.
      * <p>
      * The forked executor kills the started process together with the processes it started (on Java 9 and later), and
-     * throws {@link ExecutorTimeoutException}, which carries the tail of the output grabbed so far.
+     * throws {@link ExecutorTimeoutException}, which carries the tail of the output grabbed so far. After the kill it
+     * waits up to 5 seconds for the output to drain, so the call can return later than the configured limit.
      */
     Optional<Duration> executionTimeout();
 
