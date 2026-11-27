@@ -96,8 +96,10 @@ public interface ExecutorRequest {
     /**
      * Returns the list of extra JVM arguments to be passed to the forked process.
      * These arguments allow for customization of the JVM environment in which tool will run.
-     * This property is used ONLY by executors that spawn a new JVM, which pass them through {@code MAVEN_OPTS}; the
-     * Maven 3 {@code mvn} script splits that variable on whitespace, so an argument must not contain any.
+     * This property is used ONLY by executors that spawn a new JVM, which pass them through {@code MAVEN_OPTS}.
+     * The arguments are passed through as given: the caller is responsible for quoting any token that contains
+     * whitespace (the Maven 3 {@code mvn} script splits {@code MAVEN_OPTS} on whitespace, so such a token cannot be
+     * expressed there at all).
      *
      * @return an Optional containing the list of extra JVM arguments, or empty if not specified
      */
