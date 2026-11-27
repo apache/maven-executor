@@ -243,11 +243,11 @@ public class EmbeddedMavenExecutor implements Executor {
         }
 
         ArrayList<String> mavenArgs = new ArrayList<>();
-        String mavenArgsEnv = System.getenv("MAVEN_ARGS");
+        String mavenArgsEnv = mavenArgsEnv();
         if (useMavenArgsEnv && mavenArgsEnv != null && !mavenArgsEnv.isEmpty()) {
             Arrays.stream(mavenArgsEnv.split(" "))
                     .filter(s -> !s.trim().isEmpty())
-                    .forEach(s -> mavenArgs.add(0, s));
+                    .forEach(mavenArgs::add);
         }
 
         Properties properties = prepareProperties(executorRequest);
@@ -462,6 +462,14 @@ public class EmbeddedMavenExecutor implements Executor {
     }
 
     protected void validate(ExecutorRequest executorRequest) throws ExecutorException {}
+
+    /**
+     * Returns the value of the {@code MAVEN_ARGS} environment variable, or {@code null} if not set. The tokens are
+     * passed to Maven in the order they appear, ahead of the request arguments, when {@code useMavenArgsEnv} is set.
+     */
+    protected String mavenArgsEnv() {
+        return System.getenv("MAVEN_ARGS");
+    }
 
     protected URLClassLoader createMavenBootClassLoader(Path boot, List<URL> extraClasspath) {
         ArrayList<URL> urls = new ArrayList<>(extraClasspath);
