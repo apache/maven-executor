@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -33,6 +34,7 @@ import org.apache.maven.executor.Executor;
 import org.apache.maven.executor.ExecutorException;
 import org.apache.maven.executor.ExecutorRequest;
 import org.apache.maven.executor.ExecutorResult;
+import org.apache.maven.executor.ExecutorTimeoutException;
 
 import static java.util.Objects.requireNonNull;
 
@@ -40,6 +42,8 @@ import static java.util.Objects.requireNonNull;
  * Support class for executor implementations using {@link ProcessBuilder}.
  */
 public abstract class ProcessBuilderExecutorSupport implements Executor {
+    private static final long DRAIN_MILLIS = 5000;
+
     protected final AtomicBoolean closed;
 
     protected ProcessBuilderExecutorSupport() {
@@ -69,8 +73,8 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
             OutputStream stdOut;
             OutputStream stdErr;
             if (execution.grabOutputAsString()) {
-                stdOut = new ByteArrayOutputStream();
-                stdErr = new ByteArrayOutputStream();
+                stdOut = new GrabbedOutput();
+                stdErr = new GrabbedOutput();
             } else {
                 stdOut = execution.stdOut().orElse(IOTools.nullOutputStream());
                 stdErr = execution.stdErr().orElse(IOTools.nullOutputStream());
@@ -80,7 +84,8 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
                         .executionTimeout()
                         .orElseThrow(() -> new NoSuchElementException("No such element"))
                         .toMillis();
-                if (pump(process, stdIn, stdOut, stdErr).await(timeoutMillis, TimeUnit.MILLISECONDS)) {
+                CountDownLatch pumps = pump(process, stdIn, stdOut, stdErr);
+                if (pumps.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
                     int exitCode = process.waitFor();
                     String stdOutString = null;
                     String stdErrString = null;
@@ -91,8 +96,19 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
                     }
                     return new SimpleExecutionResult(execution, exitCode == 0, exitCode, stdOutString, stdErrString);
                 } else {
-                    process.destroyForcibly();
-                    throw new ExecutorException("Process timeout: " + execution);
+                    ProcessTrees.destroyForcibly(process);
+                    // the pumps finish once the destroyed processes have closed their pipes; wait for them, but
+                    // not for long, since a descendant that survived (Java 8) keeps the pipes open
+                    // an interrupt here takes the InterruptedException branch below, without the tail
+                    pumps.await(DRAIN_MILLIS, TimeUnit.MILLISECONDS);
+                    String stdOutTail = null;
+                    String stdErrTail = null;
+                    if (execution.grabOutputAsString()) {
+                        // only the tail: a hung build may have logged far more than fits in a second copy
+                        stdOutTail = ((GrabbedOutput) stdOut).tail(ExecutorTimeoutException.MAX_TAIL_BYTES);
+                        stdErrTail = ((GrabbedOutput) stdErr).tail(ExecutorTimeoutException.MAX_TAIL_BYTES);
+                    }
+                    throw new ExecutorTimeoutException("Process timeout: " + execution, stdOutTail, stdErrTail);
                 }
             } else {
                 pump(process, stdIn, stdOut, stdErr).await();
@@ -108,12 +124,35 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
             }
         } catch (IOException e) {
             if (process != null) {
-                process.destroyForcibly();
+                ProcessTrees.destroyForcibly(process);
             }
             throw new ExecutorException("IO problem while executing command: " + execution, e);
         } catch (InterruptedException e) {
-            process.destroyForcibly();
+            ProcessTrees.destroyForcibly(process);
             throw new ExecutorException("Interrupted while executing command: " + execution, e);
+        }
+    }
+
+    /**
+     * Grabbed output that can also hand out its tail without copying the whole buffer.
+     */
+    static final class GrabbedOutput extends ByteArrayOutputStream {
+        /**
+         * The last {@code maxBytes} bytes at most. When cut, the tail starts after the first line break in that
+         * window; a window without one starts mid-line, and a leading partial multibyte sequence decodes as U+FFFD.
+         */
+        synchronized String tail(int maxBytes) {
+            int from = Math.max(0, count - maxBytes);
+            if (from > 0) {
+                // a break as the last byte would leave nothing
+                for (int i = from; i < count - 1; i++) {
+                    if (buf[i] == '\n') {
+                        from = i + 1;
+                        break;
+                    }
+                }
+            }
+            return new String(buf, from, count - from, Charset.defaultCharset());
         }
     }
 
