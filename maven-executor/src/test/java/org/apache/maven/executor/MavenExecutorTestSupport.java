@@ -89,6 +89,14 @@ public abstract class MavenExecutorTestSupport {
 
     protected abstract Executor doSelectExecutor(Path installationDirectory);
 
+    /**
+     * Whether Maven 3 emits ANSI codes on {@code --color=yes} when the output is captured. Executors that run Maven 3
+     * as a separate process always do.
+     */
+    protected boolean maven3HonorsForcedColor() {
+        return true;
+    }
+
     @Test
     void mvnenc4() throws Exception {
         String logfile = "m4.log";
@@ -278,7 +286,9 @@ public abstract class MavenExecutorTestSupport {
                         .stdOut(stdout)
                         .build()));
         System.out.println(stdout);
-        assertTrue(stdout.toString().contains("[\u001B["), "No ANSI codes present");
+        if (maven3HonorsForcedColor()) {
+            assertTrue(stdout.toString().contains("[\u001B["), "No ANSI codes present");
+        }
         assertTrue(stdout.toString().contains("INFO"), "No INFO found");
     }
 
