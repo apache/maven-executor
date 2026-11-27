@@ -138,6 +138,8 @@ public class EmbeddedMavenExecutor implements Executor {
         if (closed.get()) {
             throw new ExecutorException("Executor is closed");
         }
+        Properties originalProperties = new Properties();
+        originalProperties.putAll(System.getProperties());
         validate(executorRequest);
         String command = executorRequest.command();
         Context context = contextMap.computeIfAbsent(
@@ -250,94 +252,56 @@ public class EmbeddedMavenExecutor implements Executor {
                     .forEach(s -> mavenArgs.add(0, s));
         }
 
-        Properties properties = prepareProperties(executorRequest);
-        // set ahead of time, if the mavenHome points to Maven4, as ClassWorld Launcher needs this property
-        properties.setProperty(
-                "maven.mainClass", requireNonNull(MVN4_MAIN_CLASSES.get(ExecutorRequest.MVN), "mainClass"));
-        System.setProperties(properties);
-        URLClassLoader bootClassLoader = createMavenBootClassLoader(boot, Collections.emptyList());
-        Thread.currentThread().setContextClassLoader(bootClassLoader);
+        Properties originalProperties = new Properties();
+        originalProperties.putAll(System.getProperties());
         try {
-            Class<?> launcherClass = bootClassLoader.loadClass("org.codehaus.plexus.classworlds.launcher.Launcher");
-            Object launcher = launcherClass.getDeclaredConstructor().newInstance();
-            Method configure = launcherClass.getMethod("configure", InputStream.class);
-            try (InputStream inputStream = Files.newInputStream(m2conf)) {
-                configure.invoke(launcher, inputStream);
-            }
-            Object classWorld = launcherClass.getMethod("getWorld").invoke(launcher);
-            Set<String> originalClassRealmIds = new HashSet<>();
-
-            // collect pre-created (in m2.conf) class realms as "original ones"; the rest are created at runtime
-            Method getRealms = classWorld.getClass().getMethod("getRealms");
-            List<Object> realms = (List<Object>) getRealms.invoke(classWorld);
-            for (Object realm : realms) {
-                Method realmGetId = realm.getClass().getMethod("getId");
-                originalClassRealmIds.add((String) realmGetId.invoke(realm));
-            }
-
-            Class<?> cliClass =
-                    (Class<?>) launcherClass.getMethod("getMainClass").invoke(launcher);
-            String version = getMavenVersion(cliClass);
-            Map<String, Function<ExecutorRequest, ExecutorResult>> commands = new HashMap<>();
-            ArrayList<Object> keepAlive = new ArrayList<>();
-
-            if (version.startsWith("3.")) {
-                // 3.x
-                if (!ExecutorRequest.MVN.equals(executorRequest.command())) {
-                    throw new IllegalArgumentException(getClass().getSimpleName() + " w/ mvn3 does not support command "
-                            + executorRequest.command());
+            Properties properties = prepareProperties(executorRequest);
+            // set ahead of time, if the mavenHome points to Maven4, as ClassWorld Launcher needs this property
+            properties.setProperty(
+                    "maven.mainClass", requireNonNull(MVN4_MAIN_CLASSES.get(ExecutorRequest.MVN), "mainClass"));
+            System.setProperties(properties);
+            URLClassLoader bootClassLoader = createMavenBootClassLoader(boot, Collections.emptyList());
+            Thread.currentThread().setContextClassLoader(bootClassLoader);
+            try {
+                Class<?> launcherClass = bootClassLoader.loadClass("org.codehaus.plexus.classworlds.launcher.Launcher");
+                Object launcher = launcherClass.getDeclaredConstructor().newInstance();
+                Method configure = launcherClass.getMethod("configure", InputStream.class);
+                try (InputStream inputStream = Files.newInputStream(m2conf)) {
+                    configure.invoke(launcher, inputStream);
                 }
-                // 3.9.x
-                mayAddToKeepAlive(keepAlive, cliClass, "org.fusesource.jansi.internal.JansiLoader");
-                // 3.10.x
-                mayAddToKeepAlive(keepAlive, cliClass, "org.jline.nativ.JLineNativeLoader");
+                Object classWorld = launcherClass.getMethod("getWorld").invoke(launcher);
+                Set<String> originalClassRealmIds = new HashSet<>();
 
-                Constructor<?> newMavenCli = cliClass.getConstructor(classWorld.getClass());
-                Object mavenCli = newMavenCli.newInstance(classWorld);
-                Class<?>[] parameterTypes = {String[].class, String.class, PrintStream.class, PrintStream.class};
-                Method doMain = cliClass.getMethod("doMain", parameterTypes);
-                commands.put(ExecutorRequest.MVN, r -> {
-                    OutputStream out;
-                    OutputStream err;
-                    if (r.grabOutputAsString()) {
-                        out = new ByteArrayOutputStream();
-                        err = new ByteArrayOutputStream();
-                    } else {
-                        out = r.stdOut().orElse(null);
-                        err = r.stdErr().orElse(null);
+                // collect pre-created (in m2.conf) class realms as "original ones"; the rest are created at runtime
+                Method getRealms = classWorld.getClass().getMethod("getRealms");
+                List<Object> realms = (List<Object>) getRealms.invoke(classWorld);
+                for (Object realm : realms) {
+                    Method realmGetId = realm.getClass().getMethod("getId");
+                    originalClassRealmIds.add((String) realmGetId.invoke(realm));
+                }
+
+                Class<?> cliClass =
+                        (Class<?>) launcherClass.getMethod("getMainClass").invoke(launcher);
+                String version = getMavenVersion(cliClass);
+                Map<String, Function<ExecutorRequest, ExecutorResult>> commands = new HashMap<>();
+                ArrayList<Object> keepAlive = new ArrayList<>();
+
+                if (version.startsWith("3.")) {
+                    // 3.x
+                    if (!ExecutorRequest.MVN.equals(executorRequest.command())) {
+                        throw new IllegalArgumentException(getClass().getSimpleName()
+                                + " w/ mvn3 does not support command " + executorRequest.command());
                     }
-                    System.setProperties(prepareProperties(r));
-                    try {
-                        ArrayList<String> args = new ArrayList<>(mavenArgs);
-                        args.addAll(r.arguments());
-                        PrintStream stdout = out == null ? null : new PrintStream(out, true);
-                        PrintStream stderr = err == null ? null : new PrintStream(err, true);
-                        int exitCode = (int) doMain.invoke(mavenCli, new Object[] {
-                            args.toArray(new String[0]), r.cwd().toString(), stdout, stderr
-                        });
-                        if (r.grabOutputAsString()) {
-                            return new SimpleExecutionResult(r, exitCode == 0, exitCode, toString(out), toString(err));
-                        } else {
-                            return new SimpleExecutionResult(r, exitCode == 0, exitCode, null, null);
-                        }
-                    } catch (Exception e) {
-                        throw new ExecutorException("Failed to execute", e);
-                    }
-                });
-            } else {
-                // assume 4.x
-                mayAddToKeepAlive(keepAlive, cliClass, "org.jline.nativ.JLineNativeLoader");
-                for (Map.Entry<String, String> cmdEntry : MVN4_MAIN_CLASSES.entrySet()) {
-                    Class<?> cmdClass = cliClass.getClassLoader().loadClass(cmdEntry.getValue());
-                    Method mainMethod = cmdClass.getMethod(
-                            "main",
-                            String[].class,
-                            classWorld.getClass(),
-                            InputStream.class,
-                            OutputStream.class,
-                            OutputStream.class);
-                    commands.put(cmdEntry.getKey(), r -> {
-                        InputStream in = r.stdIn().orElse(null);
+                    // 3.9.x
+                    mayAddToKeepAlive(keepAlive, cliClass, "org.fusesource.jansi.internal.JansiLoader");
+                    // 3.10.x
+                    mayAddToKeepAlive(keepAlive, cliClass, "org.jline.nativ.JLineNativeLoader");
+
+                    Constructor<?> newMavenCli = cliClass.getConstructor(classWorld.getClass());
+                    Object mavenCli = newMavenCli.newInstance(classWorld);
+                    Class<?>[] parameterTypes = {String[].class, String.class, PrintStream.class, PrintStream.class};
+                    Method doMain = cliClass.getMethod("doMain", parameterTypes);
+                    commands.put(ExecutorRequest.MVN, r -> {
                         OutputStream out;
                         OutputStream err;
                         if (r.grabOutputAsString()) {
@@ -351,8 +315,11 @@ public class EmbeddedMavenExecutor implements Executor {
                         try {
                             ArrayList<String> args = new ArrayList<>(mavenArgs);
                             args.addAll(r.arguments());
-                            int exitCode = (int)
-                                    mainMethod.invoke(null, args.toArray(new String[0]), classWorld, in, out, err);
+                            PrintStream stdout = out == null ? null : new PrintStream(out, true);
+                            PrintStream stderr = err == null ? null : new PrintStream(err, true);
+                            int exitCode = (int) doMain.invoke(mavenCli, new Object[] {
+                                args.toArray(new String[0]), r.cwd().toString(), stdout, stderr
+                            });
                             if (r.grabOutputAsString()) {
                                 return new SimpleExecutionResult(
                                         r, exitCode == 0, exitCode, toString(out), toString(err));
@@ -363,21 +330,62 @@ public class EmbeddedMavenExecutor implements Executor {
                             throw new ExecutorException("Failed to execute", e);
                         }
                     });
+                } else {
+                    // assume 4.x
+                    mayAddToKeepAlive(keepAlive, cliClass, "org.jline.nativ.JLineNativeLoader");
+                    for (Map.Entry<String, String> cmdEntry : MVN4_MAIN_CLASSES.entrySet()) {
+                        Class<?> cmdClass = cliClass.getClassLoader().loadClass(cmdEntry.getValue());
+                        Method mainMethod = cmdClass.getMethod(
+                                "main",
+                                String[].class,
+                                classWorld.getClass(),
+                                InputStream.class,
+                                OutputStream.class,
+                                OutputStream.class);
+                        commands.put(cmdEntry.getKey(), r -> {
+                            InputStream in = r.stdIn().orElse(null);
+                            OutputStream out;
+                            OutputStream err;
+                            if (r.grabOutputAsString()) {
+                                out = new ByteArrayOutputStream();
+                                err = new ByteArrayOutputStream();
+                            } else {
+                                out = r.stdOut().orElse(null);
+                                err = r.stdErr().orElse(null);
+                            }
+                            System.setProperties(prepareProperties(r));
+                            try {
+                                ArrayList<String> args = new ArrayList<>(mavenArgs);
+                                args.addAll(r.arguments());
+                                int exitCode = (int)
+                                        mainMethod.invoke(null, args.toArray(new String[0]), classWorld, in, out, err);
+                                if (r.grabOutputAsString()) {
+                                    return new SimpleExecutionResult(
+                                            r, exitCode == 0, exitCode, toString(out), toString(err));
+                                } else {
+                                    return new SimpleExecutionResult(r, exitCode == 0, exitCode, null, null);
+                                }
+                            } catch (Exception e) {
+                                throw new ExecutorException("Failed to execute", e);
+                            }
+                        });
+                    }
                 }
-            }
 
-            return new Context(
-                    bootClassLoader,
-                    version,
-                    classWorld,
-                    originalClassRealmIds,
-                    cliClass.getClassLoader(),
-                    commands,
-                    keepAlive);
-        } catch (Exception e) {
-            throw new ExecutorException("Failed to create executor", e);
+                return new Context(
+                        bootClassLoader,
+                        version,
+                        classWorld,
+                        originalClassRealmIds,
+                        cliClass.getClassLoader(),
+                        commands,
+                        keepAlive);
+            } catch (Exception e) {
+                throw new ExecutorException("Failed to create executor", e);
+            } finally {
+                Thread.currentThread().setContextClassLoader(originalClassLoader);
+            }
         } finally {
-            Thread.currentThread().setContextClassLoader(originalClassLoader);
             System.setProperties(originalProperties);
         }
     }
@@ -431,6 +439,8 @@ public class EmbeddedMavenExecutor implements Executor {
     @Override
     public void close() throws ExecutorException {
         if (closed.compareAndSet(false, true)) {
+            Properties originalProperties = new Properties();
+            originalProperties.putAll(System.getProperties());
             try {
                 Context context = contextMap.get(installationDirectory);
                 if (context != null) {
