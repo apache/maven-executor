@@ -91,7 +91,7 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
                     }
                     return new SimpleExecutionResult(execution, exitCode == 0, exitCode, stdOutString, stdErrString);
                 } else {
-                    process.destroyForcibly();
+                    ProcessTreeKiller.destroy(process);
                     throw new ExecutorException("Process timeout: " + execution);
                 }
             } else {
@@ -108,11 +108,11 @@ public abstract class ProcessBuilderExecutorSupport implements Executor {
             }
         } catch (IOException e) {
             if (process != null) {
-                process.destroyForcibly();
+                ProcessTreeKiller.destroy(process);
             }
             throw new ExecutorException("IO problem while executing command: " + execution, e);
         } catch (InterruptedException e) {
-            process.destroyForcibly();
+            ProcessTreeKiller.destroy(process);
             throw new ExecutorException("Interrupted while executing command: " + execution, e);
         }
     }
