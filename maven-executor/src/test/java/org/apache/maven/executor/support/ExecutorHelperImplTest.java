@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ExecutorHelperImplTest {
     @TempDir
@@ -54,5 +55,19 @@ public class ExecutorHelperImplTest {
                         request.jvmArguments(null)
                                 .executionTimeout(Duration.ofMinutes(1))
                                 .build()));
+    }
+
+    @Test
+    void embeddedModeRejectsExecutionTimeout() {
+        EmbeddedMavenExecutor embedded = new EmbeddedMavenExecutor(tempDir);
+        ForkedMavenExecutor forked = new ForkedMavenExecutor(tempDir);
+        ExecutorHelperImpl helper = new ExecutorHelperImpl(ExecutorHelper.Mode.EMBEDDED, embedded, forked, false);
+
+        ExecutorRequest request = ExecutorRequest.mavenBuilder()
+                .cwd(tempDir)
+                .userHomeDirectory(tempDir)
+                .executionTimeout(Duration.ofMinutes(1))
+                .build();
+        assertThrows(IllegalArgumentException.class, () -> helper.execute(ExecutorHelper.Mode.EMBEDDED, request));
     }
 }

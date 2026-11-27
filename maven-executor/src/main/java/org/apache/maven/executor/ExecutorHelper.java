@@ -68,6 +68,8 @@ public interface ExecutorHelper extends Executor {
         AUTO,
         /**
          * Forces embedded execution. May fail if {@link ExecutorRequest} contains input unsupported by executor.
+         * A request that sets {@link ExecutorRequest#executionTimeout()} is rejected with an
+         * {@link IllegalArgumentException}.
          */
         EMBEDDED,
         /**
