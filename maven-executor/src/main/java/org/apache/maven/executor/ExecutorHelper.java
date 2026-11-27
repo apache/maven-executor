@@ -61,13 +61,15 @@ public interface ExecutorHelper extends Executor {
      */
     enum Mode {
         /**
-         * Automatically decide. For example, presence of {@link ExecutorRequest#environmentVariables()} or
-         * {@link ExecutorRequest#jvmArguments()} will result in choosing {@link #FORKED} executor. Otherwise,
-         * {@link #EMBEDDED} executor is preferred.
+         * Automatically decide. For example, presence of {@link ExecutorRequest#environmentVariables()},
+         * {@link ExecutorRequest#jvmArguments()} or {@link ExecutorRequest#executionTimeout()} will result in
+         * choosing {@link #FORKED} executor. Otherwise, {@link #EMBEDDED} executor is preferred.
          */
         AUTO,
         /**
          * Forces embedded execution. May fail if {@link ExecutorRequest} contains input unsupported by executor.
+         * A request that sets {@link ExecutorRequest#executionTimeout()} is rejected with an
+         * {@link IllegalArgumentException}.
          */
         EMBEDDED,
         /**
